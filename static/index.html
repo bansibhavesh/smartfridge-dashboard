@@ -344,6 +344,24 @@ body {
     100% { transform: translate(0px, 0px) rotate(0deg); }
 }
 
+/* Console cursor blink */
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* Log entry slide in */
+@keyframes logSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 /* Animation classes */
 .animate-fade-in {
     animation: fadeIn 0.6s ease forwards;
@@ -2927,11 +2945,20 @@ body {
 
 
 /* ============================================================
-   SYSTEM ACTIVITY LOG (Replaces ATC)
+   LIVE CONSOLE LOG (Replaces ATC)
    ============================================================ */
 
 .log-card {
     overflow: hidden;
+    background: rgba(8, 11, 16, 0.8);
+}
+
+.log-card h2 {
+    color: #4ade80;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(74, 222, 128, 0.1);
+    padding-bottom: 6px;
 }
 
 .log-controls {
@@ -2940,7 +2967,7 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     flex-shrink: 0;
 }
 
@@ -2951,45 +2978,60 @@ body {
 }
 
 .log-filter-btn {
-    padding: 4px 10px;
+    padding: 3px 10px;
     border: 1px solid rgba(48, 56, 70, 0.4);
-    border-radius: 8px;
-    background: rgba(26, 32, 43, 0.4);
+    border-radius: 4px;
+    background: rgba(13, 17, 23, 0.8);
     color: rgba(156, 163, 175, 0.6);
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     letter-spacing: 0.3px;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
 }
 
 .log-filter-btn:hover {
     border-color: rgba(138, 180, 255, 0.3);
     color: white;
-    transform: scale(1.05);
+    transform: scale(1.02);
 }
 
 .log-filter-btn.active {
-    border-color: rgba(138, 180, 255, 0.4);
-    color: white;
-    background: rgba(138, 180, 255, 0.1);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.08);
 }
 
 .log-actions {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
+}
+
+.log-status {
+    font-size: 8px;
+    color: #4ade80;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.log-status.disconnected {
+    color: #f87171;
 }
 
 .log-action-btn {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border: 1px solid rgba(48, 56, 70, 0.4);
-    border-radius: 8px;
-    background: rgba(26, 32, 43, 0.4);
+    border-radius: 4px;
+    background: rgba(13, 17, 23, 0.8);
     color: rgba(156, 163, 175, 0.6);
-    font-size: 12px;
+    font-size: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-family: 'Courier New', monospace;
 }
 
 .log-action-btn:hover {
@@ -3007,7 +3049,14 @@ body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: thin;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    padding: 4px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.5;
 }
 
 .log-container::-webkit-scrollbar {
@@ -3020,144 +3069,152 @@ body {
 }
 
 .log-container::-webkit-scrollbar-thumb {
-    background: rgba(138, 180, 255, 0.2);
+    background: rgba(74, 222, 128, 0.2);
     border-radius: 4px;
 }
 
 .log-entry {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 8px 10px;
-    margin-bottom: 4px;
-    border-radius: 8px;
-    background: rgba(26, 32, 43, 0.3);
-    border-left: 3px solid transparent;
-    transition: all 0.3s ease;
-    animation: slideInLeft 0.3s ease both;
-    font-size: clamp(10px, 0.9vw, 13px);
+    padding: 2px 10px;
+    margin: 0;
+    border-left: 2px solid transparent;
+    transition: background 0.2s ease;
+    animation: logSlideIn 0.2s ease both;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .log-entry:hover {
-    background: rgba(37, 47, 64, 0.5);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .log-entry .log-time {
-    font-size: clamp(8px, 0.6vw, 10px);
-    color: rgba(107, 114, 128, 0.5);
+    font-size: 9px;
+    color: rgba(107, 114, 128, 0.4);
     white-space: nowrap;
     flex-shrink: 0;
-    font-weight: 500;
-    min-width: 60px;
+    min-width: 65px;
+    font-family: 'Courier New', monospace;
+    user-select: none;
 }
 
-.log-entry .log-icon {
-    font-size: clamp(12px, 1vw, 16px);
+.log-entry .log-level {
+    font-size: 10px;
     flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    margin: 0 4px;
 }
 
 .log-entry .log-message {
     flex: 1;
-    color: rgba(156, 163, 175, 0.8);
-    line-height: 1.3;
+    color: rgba(200, 210, 220, 0.85);
+    font-family: 'Courier New', monospace;
     word-break: break-word;
 }
 
-.log-entry .log-details {
-    font-size: clamp(8px, 0.6vw, 10px);
-    color: rgba(107, 114, 128, 0.5);
-    margin-top: 2px;
-}
-
-/* Log entry types */
-.log-entry.type-info {
-    border-left-color: #60a5fa;
-}
-
-.log-entry.type-success {
-    border-left-color: #4ade80;
-}
-
-.log-entry.type-warning {
-    border-left-color: #fbbf24;
-}
-
-.log-entry.type-error {
-    border-left-color: #f87171;
-}
-
-.log-entry.type-system {
-    border-left-color: #8b5cf6;
-}
-
-.log-entry.type-task {
-    border-left-color: #34d399;
-}
-
-.log-entry.type-washer {
-    border-left-color: #60a5fa;
-}
-
-.log-entry .log-badge {
-    font-size: 7px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
-}
-
-.log-entry .log-badge.info {
-    background: rgba(96, 165, 250, 0.15);
-    color: #60a5fa;
-}
-
-.log-entry .log-badge.success {
-    background: rgba(74, 222, 128, 0.15);
+.log-entry .log-message .highlight {
     color: #4ade80;
 }
 
-.log-entry .log-badge.warning {
-    background: rgba(251, 191, 36, 0.15);
-    color: #fbbf24;
-}
-
-.log-entry .log-badge.error {
-    background: rgba(248, 113, 113, 0.15);
+.log-entry .log-message .error-text {
     color: #f87171;
 }
 
-.log-entry .log-badge.system {
-    background: rgba(139, 92, 246, 0.15);
-    color: #8b5cf6;
+.log-entry .log-message .warn-text {
+    color: #fbbf24;
 }
 
-.log-entry .log-badge.task {
-    background: rgba(52, 211, 153, 0.15);
+.log-entry .log-message .info-text {
+    color: #60a5fa;
+}
+
+/* Log entry types - Console style */
+.log-entry.info {
+    border-left-color: #60a5fa;
+}
+
+.log-entry.success {
+    border-left-color: #4ade80;
+}
+
+.log-entry.success .log-message {
+    color: #4ade80;
+}
+
+.log-entry.warning {
+    border-left-color: #fbbf24;
+}
+
+.log-entry.warning .log-message {
+    color: #fbbf24;
+}
+
+.log-entry.error {
+    border-left-color: #f87171;
+}
+
+.log-entry.error .log-message {
+    color: #f87171;
+}
+
+.log-entry.system {
+    border-left-color: #8b5cf6;
+}
+
+.log-entry.system .log-message {
+    color: #a78bfa;
+}
+
+.log-entry.task {
+    border-left-color: #34d399;
+}
+
+.log-entry.task .log-message {
     color: #34d399;
 }
 
-.log-entry .log-badge.washer {
-    background: rgba(96, 165, 250, 0.15);
+.log-entry.washer {
+    border-left-color: #60a5fa;
+}
+
+.log-entry.washer .log-message {
     color: #60a5fa;
 }
 
 .log-footer {
     display: flex;
     justify-content: space-between;
-    padding-top: 8px;
-    font-size: 9px;
-    color: rgba(107, 114, 128, 0.5);
+    padding-top: 6px;
+    font-size: 8px;
+    color: rgba(107, 114, 128, 0.4);
     flex-shrink: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.03);
+    font-family: 'Courier New', monospace;
+}
+
+.log-footer span {
+    opacity: 0.6;
 }
 
 .log-empty {
-    color: rgba(107, 114, 128, 0.5);
+    color: rgba(107, 114, 128, 0.4);
     text-align: center;
     padding: 30px 10px;
-    font-size: 12px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Console cursor */
+.console-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 12px;
+    background: #4ade80;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
 }
 
 
@@ -4153,44 +4210,44 @@ body {
 
 
 <!-- ============================================================
-     SYSTEM ACTIVITY LOG (Replaces ATC)
+     LIVE CONSOLE LOG (Replaces ATC)
      ============================================================ -->
 
 <section class="card log-card">
 
-<h2>📋 ACTIVITY LOG</h2>
+<h2>📟 CONSOLE</h2>
 
 <div class="log-controls">
     <div class="log-filters">
         <button class="log-filter-btn active" data-filter="all" onclick="filterLogs('all')">All</button>
-        <button class="log-filter-btn" data-filter="system" onclick="filterLogs('system')">🖥️ System</button>
-        <button class="log-filter-btn" data-filter="task" onclick="filterLogs('task')">📋 Tasks</button>
-        <button class="log-filter-btn" data-filter="washer" onclick="filterLogs('washer')">🧺 Washer</button>
-        <button class="log-filter-btn" data-filter="info" onclick="filterLogs('info')">ℹ️ Info</button>
-        <button class="log-filter-btn" data-filter="error" onclick="filterLogs('error')">❌ Errors</button>
+        <button class="log-filter-btn" data-filter="system" onclick="filterLogs('system')">System</button>
+        <button class="log-filter-btn" data-filter="task" onclick="filterLogs('task')">Tasks</button>
+        <button class="log-filter-btn" data-filter="washer" onclick="filterLogs('washer')">Washer</button>
+        <button class="log-filter-btn" data-filter="error" onclick="filterLogs('error')">Errors</button>
     </div>
     <div class="log-actions">
-        <button class="log-action-btn" onclick="refreshLogs()" title="Refresh logs">🔄</button>
-        <button class="log-action-btn danger" onclick="clearLogs()" title="Clear all logs">🗑️</button>
+        <span class="log-status" id="logStatus">● LIVE</span>
+        <button class="log-action-btn" onclick="refreshLogs()" title="Refresh">↻</button>
+        <button class="log-action-btn danger" onclick="clearLogs()" title="Clear">✕</button>
     </div>
 </div>
 
 <div class="log-container" id="logContainer">
-    <div class="log-loading" style="color: rgba(107,114,128,0.6); text-align: center; padding: 30px;">
-        <span>Loading logs...</span>
+    <div class="log-empty">
+        ═══ Waiting for logs... ═══<span class="console-cursor"></span>
     </div>
 </div>
 
 <div class="log-footer">
     <span id="logCount">0 entries</span>
-    <span id="logUpdateTime">Updated just now</span>
+    <span id="logUpdateTime">● ${new Date().toLocaleTimeString()}</span>
 </div>
 
 </section>
 
 
 <!-- ============================================================
-     NEWS (Fixed)
+     NEWS
      ============================================================ -->
 
 <section class="card">
@@ -6153,7 +6210,7 @@ async function loadWeather() {
 
 
 /* ============================================================
-   NEWS (Fixed)
+   NEWS
    ============================================================ */
 
 async function loadNews() {
@@ -6217,7 +6274,6 @@ function renderNews(data) {
     for (const [category, newsItems] of Object.entries(articles)) {
         if (!newsItems || !newsItems.length) continue;
         
-        // Show only the first item from each category
         const item = newsItems[0];
         if (!item || !item.title || item.title.length < 3) continue;
         
@@ -6235,9 +6291,7 @@ function renderNews(data) {
         const title = document.createElement("div");
         title.className = "news-title";
         let cleanTitle = item.title;
-        // Remove any remaining HTML tags
         cleanTitle = cleanTitle.replace(/<[^>]+>/g, '').trim();
-        // Remove any weird characters
         cleanTitle = cleanTitle.replace(/[^\w\s\.\,\!\?\-\'\"\(\)]/g, '').trim();
         if (cleanTitle.length > 80) {
             cleanTitle = cleanTitle.substring(0, 77) + '...';
@@ -6250,12 +6304,10 @@ function renderNews(data) {
             div.onclick = () => { window.open(item.url, "_blank"); };
         }
         
-        // Show description if it's clean and not empty
         if (item.description && item.description !== "Read more at the source" && item.description.length > 5) {
             const desc = document.createElement("div");
             desc.className = "news-description";
             let descText = item.description;
-            // Clean description
             descText = descText.replace(/<[^>]+>/g, '').trim();
             descText = descText.replace(/[^\w\s\.\,\!\?\-\'\"\(\)]/g, '').trim();
             if (descText.length > 120) {
@@ -6303,14 +6355,67 @@ function getFallbackNews() {
 
 
 /* ============================================================
-   SYSTEM ACTIVITY LOG
+   LIVE CONSOLE LOG
    ============================================================ */
 
 let currentLogFilter = 'all';
 let logRefreshInterval = null;
 
+function renderLogs(logs) {
+    const container = document.getElementById('logContainer');
+    container.innerHTML = '';
+    
+    if (!logs || logs.length === 0) {
+        container.innerHTML = `
+            <div class="log-empty">
+                ═══ No logs yet ═══<span class="console-cursor"></span>
+            </div>
+        `;
+        return;
+    }
+    
+    const levelIcons = {
+        'info': 'ℹ',
+        'success': '✓',
+        'warning': '⚠',
+        'error': '✗',
+        'system': '◆',
+        'task': '◈',
+        'washer': '◉'
+    };
+    
+    logs.forEach((log, index) => {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${log.type}`;
+        entry.style.animationDelay = `${index * 0.02}s`;
+        
+        const time = new Date(log.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const icon = levelIcons[log.type] || '•';
+        
+        // Format message with colors
+        let message = log.message;
+        message = message.replace(/error/gi, match => `<span class="error-text">${match}</span>`);
+        message = message.replace(/success|synced|✅/gi, match => `<span class="highlight">${match}</span>`);
+        message = message.replace(/warning|⚠️/gi, match => `<span class="warn-text">${match}</span>`);
+        
+        entry.innerHTML = `
+            <span class="log-time">${timeStr}</span>
+            <span class="log-level">${icon}</span>
+            <span class="log-message">${message}</span>
+        `;
+        
+        container.appendChild(entry);
+    });
+    
+    // Auto scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
 async function loadLogs() {
     const container = document.getElementById('logContainer');
+    const status = document.getElementById('logStatus');
     
     try {
         const url = currentLogFilter === 'all' 
@@ -6320,11 +6425,13 @@ async function loadLogs() {
         const response = await fetch(url);
         const data = await response.json();
         
+        status.textContent = '● LIVE';
+        status.className = 'log-status';
+        
         if (!data.logs || data.logs.length === 0) {
             container.innerHTML = `
                 <div class="log-empty">
-                    📭 No logs yet<br>
-                    <small>Activity will appear here as it happens</small>
+                    ═══ No logs yet ═══<span class="console-cursor"></span>
                 </div>
             `;
             document.getElementById('logCount').textContent = '0 entries';
@@ -6335,60 +6442,18 @@ async function loadLogs() {
         document.getElementById('logCount').textContent = `${data.total} entries`;
         
         const now = new Date();
-        document.getElementById('logUpdateTime').textContent = `🔄 Updated ${now.toLocaleTimeString()}`;
+        document.getElementById('logUpdateTime').textContent = `● ${now.toLocaleTimeString()}`;
         
     } catch (error) {
         console.error('Logs error:', error);
+        status.textContent = '● OFFLINE';
+        status.className = 'log-status disconnected';
         container.innerHTML = `
             <div class="log-empty" style="color: #f87171;">
-                ⚠️ Could not load logs<br>
-                <small>${error.message}</small>
+                ═══ Connection lost ═══
             </div>
         `;
     }
-}
-
-function renderLogs(logs) {
-    const container = document.getElementById('logContainer');
-    container.innerHTML = '';
-    
-    const typeIcons = {
-        'info': 'ℹ️',
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'system': '🖥️',
-        'task': '📋',
-        'washer': '🧺'
-    };
-    
-    logs.forEach((log, index) => {
-        const entry = document.createElement('div');
-        entry.className = `log-entry type-${log.type}`;
-        entry.style.animationDelay = `${index * 0.03}s`;
-        
-        const time = new Date(log.timestamp);
-        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        const icon = typeIcons[log.type] || '📌';
-        
-        let messageHtml = log.message;
-        if (log.details && Object.keys(log.details).length > 0) {
-            const detailsStr = Object.entries(log.details)
-                .map(([key, val]) => `${key}: ${val}`)
-                .join(' • ');
-            messageHtml += `<div class="log-details">${detailsStr}</div>`;
-        }
-        
-        entry.innerHTML = `
-            <span class="log-time">${timeStr}</span>
-            <span class="log-icon">${icon}</span>
-            <div class="log-message">${messageHtml}</div>
-            <span class="log-badge ${log.type}">${log.type}</span>
-        `;
-        
-        container.appendChild(entry);
-    });
 }
 
 function filterLogs(filter) {
@@ -6402,18 +6467,18 @@ function filterLogs(filter) {
 }
 
 async function refreshLogs() {
-    const btn = document.querySelector('.log-action-btn:first-child');
+    const btn = document.querySelector('.log-actions .log-action-btn:first-child');
     btn.textContent = '⏳';
     btn.disabled = true;
     
     await loadLogs();
     
-    btn.textContent = '🔄';
+    btn.textContent = '↻';
     btn.disabled = false;
 }
 
 async function clearLogs() {
-    if (!confirm('Are you sure you want to clear all logs?')) return;
+    if (!confirm('Clear all logs?')) return;
     
     try {
         const response = await fetch('/api/logs', { method: 'DELETE' });
