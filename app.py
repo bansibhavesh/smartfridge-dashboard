@@ -270,6 +270,21 @@ SMARTTHINGS_TOKEN = os.getenv("SMARTTHINGS_TOKEN", "")
 SMARTTHINGS_DEVICE_ID = os.getenv("SMARTTHINGS_DEVICE_ID", "")
 SMARTTHINGS_ENABLED = bool(SMARTTHINGS_TOKEN and SMARTTHINGS_DEVICE_ID)
 
+# ============================================================
+# SMARTTHINGS ERROR IGNORING CONFIG
+# ============================================================
+
+# Set this to True to ignore SmartThings errors in logs
+IGNORE_SMARTTHINGS_ERRORS = True
+
+# Maximum number of consecutive SmartThings errors before suppressing logs
+SMARTTHINGS_ERROR_THRESHOLD = 5
+
+# Track SmartThings errors
+_smartthings_error_count = 0
+_smartthings_last_error_time = None
+_smartthings_error_suppressed = False
+
 if SMARTTHINGS_ENABLED:
     print("✅ SmartThings configuration loaded")
     log_system("SmartThings configured", {"device_id": SMARTTHINGS_DEVICE_ID})
@@ -330,6 +345,7 @@ WASHER_STATUS_MAP = {
 
 # Cycle code mapping
 CYCLE_CODES = {
+    # Regular cycles
     "1B": {"name": "Cotton", "icon": "👕"},
     "35": {"name": "Synthetics", "icon": "🧵"},
     "1D": {"name": "Delicates", "icon": "🌸"},
@@ -354,6 +370,8 @@ CYCLE_CODES = {
     "29": {"name": "Drum Clean", "icon": "🧹"},
     "27": {"name": "Blouses", "icon": "👚"},
     "28": {"name": "Curtains", "icon": "🪟"},
+    
+    # Special cycles
     "UC": {"name": "Drum Clean", "icon": "🧹"},
     "DC": {"name": "Drum Clean", "icon": "🧹"},
     "SC": {"name": "Self Clean", "icon": "🧼"},
@@ -861,6 +879,9 @@ def system_status():
 # ============================================================
 
 def get_washer_status_from_api():
+    """Fetch washing machine status from SmartThings API."""
+    global _smartthings_error_count, _smartthings_last_error_time, _smartthings_error_suppressed
+    
     if not SMARTTHINGS_ENABLED:
         return None
     
@@ -874,8 +895,24 @@ def get_washer_status_from_api():
         response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code != 200:
-            log_warning(f"SmartThings API error: {response.status_code}")
+            # Track errors
+            _smartthings_error_count += 1
+            _smartthings_last_error_time = datetime.now(timezone.utc)
+            
+            # Check if we should log this error
+            if _smartthings_error_count <= SMARTTHINGS_ERROR_THRESHOLD:
+                log_warning(f"SmartThings API error: {response.status_code}")
+            elif _smartthings_error_count == SMARTTHINGS_ERROR_THRESHOLD + 1:
+                log_warning("SmartThings API errors suppressed (will retry silently)")
+                _smartthings_error_suppressed = True
+            
             return None
+        
+        # Reset error count on success
+        if _smartthings_error_suppressed:
+            log_success("SmartThings API recovered")
+            _smartthings_error_suppressed = False
+        _smartthings_error_count = 0
         
         data = response.json()
         status = parse_washer_status(data)
@@ -890,21 +927,43 @@ def get_washer_status_from_api():
         return status
         
     except requests.exceptions.Timeout:
-        log_warning("SmartThings API timeout")
+        _smartthings_error_count += 1
+        _smartthings_last_error_time = datetime.now(timezone.utc)
+        
+        if _smartthings_error_count <= SMARTTHINGS_ERROR_THRESHOLD:
+            log_warning("SmartThings API timeout")
+        elif _smartthings_error_count == SMARTTHINGS_ERROR_THRESHOLD + 1:
+            log_warning("SmartThings API errors suppressed (will retry silently)")
+            _smartthings_error_suppressed = True
+        
         return None
     except Exception as e:
-        log_error(f"SmartThings error: {e}")
+        _smartthings_error_count += 1
+        _smartthings_last_error_time = datetime.now(timezone.utc)
+        
+        if _smartthings_error_count <= SMARTTHINGS_ERROR_THRESHOLD:
+            log_error(f"SmartThings error: {e}")
+        elif _smartthings_error_count == SMARTTHINGS_ERROR_THRESHOLD + 1:
+            log_warning("SmartThings API errors suppressed (will retry silently)")
+            _smartthings_error_suppressed = True
+        
         return None
 
 def parse_washer_status(data):
+    """Parse the SmartThings API response for washing machine status."""
     try:
+        # Get the components/status
         components = data.get("components", {})
+        
+        # Check all components for capabilities
         capabilities = {}
         
+        # First check "main" component
         main = components.get("main", {})
         if "capabilities" in main:
             capabilities = main.get("capabilities", {})
         
+        # If no capabilities in main, try to find them elsewhere
         if not capabilities:
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict) and "capabilities" in comp_data:
@@ -912,6 +971,7 @@ def parse_washer_status(data):
                     if capabilities:
                         break
         
+        # IMPORTANT: Also check for top-level capabilities that might not be in "main"
         if not capabilities.get("samsungce.washerOperatingState"):
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
@@ -920,8 +980,31 @@ def parse_washer_status(data):
                             if key not in capabilities:
                                 capabilities[key] = value
         
-        washer_ops = capabilities.get("samsungce.washerOperatingState", {})
+        # If still no capabilities, try using the raw data directly
+        if not capabilities:
+            for key, value in data.items():
+                if key == "samsungce.washerOperatingState" or "washerOperatingState" in key:
+                    capabilities[key] = value
         
+        # Get washer operating state - try multiple locations
+        washer_ops = {}
+        
+        if "samsungce.washerOperatingState" in capabilities:
+            washer_ops = capabilities.get("samsungce.washerOperatingState", {})
+        else:
+            for key, value in data.items():
+                if "washerOperatingState" in key:
+                    washer_ops = value
+                    break
+        
+        if not washer_ops:
+            for comp_name, comp_data in components.items():
+                if isinstance(comp_data, dict):
+                    if "samsungce.washerOperatingState" in comp_data:
+                        washer_ops = comp_data.get("samsungce.washerOperatingState", {})
+                        break
+        
+        # Get the key status values
         operating_state = washer_ops.get("operatingState", {}).get("value", "unknown")
         washer_job_state = washer_ops.get("washerJobState", {}).get("value", "unknown")
         washer_job_phase = washer_ops.get("washerJobPhase", {}).get("value", "unknown")
@@ -929,49 +1012,77 @@ def parse_washer_status(data):
         remaining_time = washer_ops.get("remainingTime", {}).get("value", 0)
         remaining_time_str = washer_ops.get("remainingTimeStr", {}).get("value", "")
         
+        # Get switch state - try multiple locations
         switch_state = "unknown"
         if "switch" in capabilities:
             switch_state = capabilities.get("switch", {}).get("switch", {}).get("value", "unknown")
         elif "samsungce.switch" in capabilities:
             switch_state = capabilities.get("samsungce.switch", {}).get("switch", {}).get("value", "unknown")
+        else:
+            for comp_name, comp_data in components.items():
+                if isinstance(comp_data, dict):
+                    if "switch" in comp_data:
+                        switch_state = comp_data.get("switch", {}).get("switch", {}).get("value", "unknown")
+                        break
+                    if "samsungce.switch" in comp_data:
+                        switch_state = comp_data.get("samsungce.switch", {}).get("switch", {}).get("value", "unknown")
+                        break
         
+        # Get cycle info - try multiple locations
         course = "unknown"
         if "custom.supportedOptions" in capabilities:
             course = capabilities.get("custom.supportedOptions", {}).get("course", {}).get("value", "unknown")
+        else:
+            for comp_name, comp_data in components.items():
+                if isinstance(comp_data, dict):
+                    if "custom.supportedOptions" in comp_data:
+                        course = comp_data.get("custom.supportedOptions", {}).get("course", {}).get("value", "unknown")
+                        break
         
+        # Determine the status
         status_key = "idle"
+        
+        # Check if running
         is_running = False
         
         if operating_state == "running":
             is_running = True
         elif switch_state == "on":
             is_running = True
-        elif washer_job_state in ["running", "drumCleaning", "wash", "rinse", "spin"]:
+        elif washer_job_state in ["running", "drumCleaning", "wash", "rinse", "spin", "washing", "drying"]:
             is_running = True
-        elif washer_job_phase in ["running", "drumCleaning", "wash", "rinse", "spin"]:
+        elif washer_job_phase in ["running", "drumCleaning", "wash", "rinse", "spin", "washing", "drying"]:
             is_running = True
         
+        # Check if completed
         is_completed = False
         if washer_job_state == "finished" or washer_job_phase == "finished":
             is_completed = True
         elif progress == 100:
             is_completed = True
         
+        # Determine final status
         if is_completed:
             status_key = "completed"
         elif is_running:
             status_key = "running"
         elif operating_state == "paused":
             status_key = "paused"
+        else:
+            status_key = "idle"
         
+        # Special case for Drum Clean
         if washer_job_state == "drumCleaning" or washer_job_phase == "drumCleaning":
             status_key = "running"
         
+        # Get status info
         status_info = WASHER_STATUS_MAP.get(status_key, WASHER_STATUS_MAP["unknown"])
         
+        # Determine cycle name
         cycle_name = "Unknown"
         cycle_icon = "🔄"
         
+        # Check if it's Drum Clean
         if washer_job_state == "drumCleaning" or washer_job_phase == "drumCleaning":
             cycle_name = "Drum Clean"
             cycle_icon = "🧹"
@@ -980,6 +1091,12 @@ def parse_washer_status(data):
             cycle_name = cycle_info["name"]
             cycle_icon = cycle_info["icon"]
         
+        # If still unknown, try to determine from job state
+        if cycle_name == "Unknown" and washer_job_state not in ["unknown", "finished", "none"]:
+            cycle_name = f"{washer_job_state.capitalize()}"
+            cycle_icon = "⚙️"
+        
+        # Build result
         result = {
             "status": status_info["status"],
             "display": status_info["display"],
@@ -996,6 +1113,7 @@ def parse_washer_status(data):
             "job_state": washer_job_state,
             "job_phase": washer_job_phase,
             "switch_state": switch_state,
+            "raw_data": data
         }
         
         return result
@@ -1006,7 +1124,8 @@ def parse_washer_status(data):
 
 @app.get("/api/smartthings/washer")
 def get_washer_status():
-    global _smartthings_cache, _smartthings_cache_time
+    """Get washing machine status from SmartThings."""
+    global _smartthings_cache, _smartthings_cache_time, _smartthings_error_suppressed
     
     if not SMARTTHINGS_ENABLED:
         return {
@@ -1016,6 +1135,7 @@ def get_washer_status():
         }
     
     try:
+        # Check cache
         if _smartthings_cache and _smartthings_cache_time:
             elapsed = (datetime.now(timezone.utc) - _smartthings_cache_time).total_seconds()
             if elapsed < _smartthings_cache_duration:
@@ -1039,26 +1159,101 @@ def get_washer_status():
                 "cached": False
             }
         else:
+            # Return cached status if available, even if stale
+            if _smartthings_cache:
+                return {
+                    "success": True,
+                    "enabled": True,
+                    "status": _smartthings_cache,
+                    "cached": True,
+                    "stale": True,
+                    "cache_age": round((datetime.now(timezone.utc) - _smartthings_cache_time).total_seconds(), 1) if _smartthings_cache_time else 0
+                }
+            
             return {
                 "success": False,
                 "enabled": True,
-                "error": "Failed to get washer status"
+                "error": "Failed to get washer status",
+                "suppressed": _smartthings_error_suppressed
             }
             
     except Exception as e:
-        log_error(f"Washer status error: {e}")
+        # Don't log if errors are being suppressed
+        if not _smartthings_error_suppressed:
+            log_error(f"Washer status error: {e}")
         return {
             "success": False,
             "enabled": True,
+            "error": str(e),
+            "suppressed": _smartthings_error_suppressed
+        }
+
+@app.post("/api/smartthings/reset-errors")
+def reset_smartthings_errors():
+    """Reset SmartThings error counter and suppression."""
+    global _smartthings_error_count, _smartthings_error_suppressed
+    _smartthings_error_count = 0
+    _smartthings_error_suppressed = False
+    log_system("SmartThings error counter reset")
+    return {"success": True}
+
+@app.get("/api/smartthings/device-info")
+def get_smartthings_device_info():
+    """Get basic device info from SmartThings."""
+    if not SMARTTHINGS_ENABLED:
+        return {
+            "success": False,
+            "enabled": False,
+            "error": "SmartThings not configured"
+        }
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {SMARTTHINGS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"https://api.smartthings.com/v1/devices/{SMARTTHINGS_DEVICE_ID}"
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            return {
+                "success": False,
+                "error": f"API error: {response.status_code}"
+            }
+        
+        data = response.json()
+        return {
+            "success": True,
+            "device": data
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
             "error": str(e)
         }
+
+@app.get("/api/smartthings/debug")
+def debug_smartthings():
+    """Debug endpoint to see raw API response."""
+    if not SMARTTHINGS_ENABLED:
+        return {"error": "Not configured"}
+    
+    try:
+        headers = {"Authorization": f"Bearer {SMARTTHINGS_TOKEN}"}
+        url = f"https://api.smartthings.com/v1/devices/{SMARTTHINGS_DEVICE_ID}/status"
+        response = requests.get(url, headers=headers, timeout=10)
+        return response.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 # ============================================================
 # LOGS ENDPOINTS
 # ============================================================
 
 @app.get("/api/logs")
-def get_logs(limit: int = 50, type_filter: str = None):
+def get_logs(limit: int = 100, type_filter: str = None):
     """Get system logs."""
     log_data = load_logs()
     logs = log_data.get("logs", [])
@@ -1717,21 +1912,38 @@ def fetch_news_from_rss(feed_url, max_items=3):
         feed = feedparser.parse(feed_url)
         articles = []
         
+        if not feed.entries:
+            return []
+        
         for entry in feed.entries[:max_items]:
             try:
                 title = entry.get('title', '')
-                title = clean_html_text(title)
-                if not title:
+                if title:
+                    title = clean_html_text(title)
+                    title = ' '.join(title.split())
+                    if len(title) > 100:
+                        title = title[:97] + '...'
+                else:
+                    continue
+                
+                if len(title) < 3 or title.startswith('[') and title.endswith(']'):
                     continue
                 
                 description = entry.get('description') or entry.get('summary') or ''
-                description = clean_html_text(description)
-                if len(description) > 200:
-                    description = description[:197] + '...'
+                if description:
+                    description = clean_html_text(description)
+                    description = html.unescape(description)
+                    description = ' '.join(description.split())
+                    if len(description) > 200:
+                        description = description[:197] + '...'
+                else:
+                    description = "Read more at the source"
                 
-                source = entry.get('source', {}).get('title', '')
-                if not source:
-                    source = entry.get('author', '')
+                source = ''
+                if 'source' in entry and hasattr(entry.source, 'title'):
+                    source = entry.source.title
+                if not source and 'author' in entry:
+                    source = entry.author
                 if not source:
                     url = entry.get('link', '')
                     if 'timesofindia' in url:
@@ -1760,7 +1972,7 @@ def fetch_news_from_rss(feed_url, max_items=3):
                 
                 articles.append({
                     'title': title,
-                    'description': description or f"Read more at {source}",
+                    'description': description,
                     'source': {'name': source},
                     'url': url,
                     'published': published
