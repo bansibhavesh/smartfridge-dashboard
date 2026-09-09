@@ -11,7 +11,8 @@ import socket
 import platform
 import html
 import threading
-import random
+import logging
+import sys
 from datetime import datetime, timezone, timedelta
 
 import requests
@@ -56,17 +57,6 @@ CREDENTIALS_FILE = BASE_DIR / "credentials.json"
 TOKEN_FILE = BASE_DIR / "token.json"
 
 # ============================================================
-# ENVIRONMENT DETECTION
-# ============================================================
-
-IS_RENDER = os.environ.get("RENDER", "false").lower() == "true"
-
-if IS_RENDER:
-    print("🌐 Running on Render.com")
-else:
-    print("💻 Running locally")
-
-# ============================================================
 # APP
 # ============================================================
 
@@ -88,6 +78,108 @@ try:
     print("✅ Loaded environment variables from .env file")
 except ImportError:
     print("ℹ️ python-dotenv not installed - using system environment variables")
+
+# ============================================================
+# LOGGING SETUP (Render-friendly)
+# ============================================================
+
+# Configure logging for Render
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # This goes to Render console
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# ============================================================
+# SYSTEM ACTIVITY LOG (Dashboard Logs)
+# ============================================================
+
+LOG_FILE = BASE_DIR / "system_log.json"
+MAX_LOG_ENTRIES = 500  # Keep last 500 entries
+
+def load_logs():
+    """Load logs from file."""
+    try:
+        if LOG_FILE.exists():
+            with open(LOG_FILE, 'r') as f:
+                return json.load(f)
+        return {"logs": []}
+    except Exception as e:
+        logger.error(f"Error loading logs: {e}")
+        return {"logs": []}
+
+def save_logs(log_data):
+    """Save logs to file."""
+    try:
+        with open(LOG_FILE, 'w') as f:
+            json.dump(log_data, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving logs: {e}")
+        return False
+
+def add_log_entry(event_type, message, details=None):
+    """Add a new log entry and output to console."""
+    log_data = load_logs()
+    logs = log_data.get("logs", [])
+    
+    entry = {
+        "id": f"log_{datetime.now(timezone.utc).timestamp()}",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "type": event_type,
+        "message": message,
+        "details": details or {}
+    }
+    
+    logs.insert(0, entry)
+    
+    # Limit log size
+    if len(logs) > MAX_LOG_ENTRIES:
+        logs = logs[:MAX_LOG_ENTRIES]
+    
+    log_data["logs"] = logs
+    save_logs(log_data)
+    
+    # Also log to console (for Render)
+    emoji_map = {
+        "info": "ℹ️",
+        "success": "✅",
+        "warning": "⚠️",
+        "error": "❌",
+        "system": "🖥️",
+        "task": "📋",
+        "washer": "🧺",
+        "habit": "🎯",
+        "note": "📝"
+    }
+    emoji = emoji_map.get(event_type, "📌")
+    logger.info(f"{emoji} {message}")
+    
+    return entry
+
+def log_info(message, details=None):
+    add_log_entry("info", message, details)
+
+def log_success(message, details=None):
+    add_log_entry("success", message, details)
+
+def log_warning(message, details=None):
+    add_log_entry("warning", message, details)
+
+def log_error(message, details=None):
+    add_log_entry("error", message, details)
+
+def log_system(message, details=None):
+    add_log_entry("system", message, details)
+
+def log_task(message, details=None):
+    add_log_entry("task", message, details)
+
+def log_washer(message, details=None):
+    add_log_entry("washer", message, details)
 
 # ============================================================
 # NEWS API CONFIG
@@ -180,8 +272,10 @@ SMARTTHINGS_ENABLED = bool(SMARTTHINGS_TOKEN and SMARTTHINGS_DEVICE_ID)
 
 if SMARTTHINGS_ENABLED:
     print("✅ SmartThings configuration loaded")
+    log_system("SmartThings configured", {"device_id": SMARTTHINGS_DEVICE_ID})
 else:
     print("⚠️ SmartThings not configured - token or device ID missing")
+    log_warning("SmartThings not configured")
 
 # Cache for SmartThings status
 _smartthings_cache = None
@@ -234,9 +328,8 @@ WASHER_STATUS_MAP = {
     }
 }
 
-# Cycle code mapping - Updated with actual codes from your washing machine
+# Cycle code mapping
 CYCLE_CODES = {
-    # Regular cycles
     "1B": {"name": "Cotton", "icon": "👕"},
     "35": {"name": "Synthetics", "icon": "🧵"},
     "1D": {"name": "Delicates", "icon": "🌸"},
@@ -261,8 +354,6 @@ CYCLE_CODES = {
     "29": {"name": "Drum Clean", "icon": "🧹"},
     "27": {"name": "Blouses", "icon": "👚"},
     "28": {"name": "Curtains", "icon": "🪟"},
-    
-    # Special cycles
     "UC": {"name": "Drum Clean", "icon": "🧹"},
     "DC": {"name": "Drum Clean", "icon": "🧹"},
     "SC": {"name": "Self Clean", "icon": "🧼"},
@@ -270,37 +361,20 @@ CYCLE_CODES = {
 }
 
 def map_cycle_code(code):
-    """Map cycle codes to readable names."""
     cycle_map = {
-        "1B": "Cotton",
-        "35": "Synthetics",
-        "1D": "Delicates",
-        "A0": "Quick Wash",
-        "B0": "Rinse + Spin",
-        "25": "Spin Only",
-        "22": "Baby Care",
-        "96": "Wool",
-        "20": "Outdoor",
-        "65": "Sports Wear",
-        "33": "Shirts",
-        "23": "Denim",
-        "24": "Towels",
-        "26": "Bedding",
-        "2F": "Drain + Spin",
-        "2E": "Rinse + Spin",
-        "30": "Silent Wash",
-        "2D": "15 Min Quick",
-        "36": "Hand Wash",
-        "38": "Cloudy Day",
-        "37": "Allergy Care",
-        "29": "Drum Clean",
-        "27": "Blouses",
-        "28": "Curtains",
+        "1B": "Cotton", "35": "Synthetics", "1D": "Delicates",
+        "A0": "Quick Wash", "B0": "Rinse + Spin", "25": "Spin Only",
+        "22": "Baby Care", "96": "Wool", "20": "Outdoor",
+        "65": "Sports Wear", "33": "Shirts", "23": "Denim",
+        "24": "Towels", "26": "Bedding", "2F": "Drain + Spin",
+        "2E": "Rinse + Spin", "30": "Silent Wash", "2D": "15 Min Quick",
+        "36": "Hand Wash", "38": "Cloudy Day", "37": "Allergy Care",
+        "29": "Drum Clean", "27": "Blouses", "28": "Curtains",
     }
     return cycle_map.get(code, f"Cycle {code}")
 
 # ============================================================
-# OPENSKY OAUTH2 TOKEN MANAGER (FIXED FOR RENDER)
+# OPENSKY OAUTH2 TOKEN MANAGER
 # ============================================================
 
 TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
@@ -310,9 +384,8 @@ OPENSKY_CLIENT_SECRET = os.getenv("OPENSKY_CLIENT_SECRET")
 
 if OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET:
     print("✅ Loaded OpenSky credentials from environment variables")
-    HAS_VALID_CREDENTIALS = True
-else:
-    # Try loading from file (local development)
+
+if not OPENSKY_CLIENT_ID or not OPENSKY_CLIENT_SECRET:
     OPENSKY_CREDENTIALS_FILE = BASE_DIR / "opensky_credentials.json"
     if OPENSKY_CREDENTIALS_FILE.exists():
         try:
@@ -336,11 +409,12 @@ else:
             print(f"❌ Error loading OpenSky credentials JSON: {e}")
 
 if not OPENSKY_CLIENT_ID or not OPENSKY_CLIENT_SECRET:
-    print("⚠️ No OpenSky credentials found - using unauthenticated API")
-    HAS_VALID_CREDENTIALS = False
-else:
-    HAS_VALID_CREDENTIALS = True
+    print("⚠️ Trying hardcoded credentials (for testing)...")
+    OPENSKY_CLIENT_ID = "bansi-api-client"
+    OPENSKY_CLIENT_SECRET = "fkUpnnDfn2yAYkSgWIO5FvmBsxeIQlBT"
+    print("✅ Using hardcoded credentials")
 
+HAS_VALID_CREDENTIALS = bool(OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET)
 TOKEN_REFRESH_MARGIN = 30
 
 class TokenManager:
@@ -357,15 +431,8 @@ class TokenManager:
         return self._refresh()
 
     def _refresh(self):
-        if not self._has_valid_credentials:
-            return None
-            
         try:
             print("🔄 Refreshing OpenSky token...")
-            
-            # Longer timeout for Render
-            timeout = 30 if IS_RENDER else 10
-            
             r = requests.post(
                 TOKEN_URL,
                 data={
@@ -373,37 +440,21 @@ class TokenManager:
                     "client_id": OPENSKY_CLIENT_ID,
                     "client_secret": OPENSKY_CLIENT_SECRET,
                 },
-                timeout=timeout,
+                timeout=10,
             )
-            
             if r.status_code == 401:
-                print("❌ Authentication failed! Check your OpenSky credentials.")
+                print("❌ Authentication failed!")
                 self._has_valid_credentials = False
                 return None
-                
             r.raise_for_status()
             data = r.json()
             self.token = data["access_token"]
             expires_in = data.get("expires_in", 1800)
             self.expires_at = datetime.now() + timedelta(seconds=expires_in - TOKEN_REFRESH_MARGIN)
-            print(f"✅ OpenSky token refreshed successfully")
+            print(f"✅ OpenSky token refreshed")
             return self.token
-            
-        except requests.exceptions.Timeout:
-            print(f"⚠️ OpenSky auth timeout (connection to auth.opensky-network.org took too long)")
-            print("   Using unauthenticated API as fallback")
-            self._has_valid_credentials = False
-            return None
-            
-        except requests.exceptions.ConnectionError:
-            print(f"⚠️ OpenSky auth connection error - server unreachable")
-            print("   Using unauthenticated API as fallback")
-            self._has_valid_credentials = False
-            return None
-            
         except Exception as e:
             print(f"❌ Failed to get OpenSky token: {e}")
-            self._has_valid_credentials = False
             return None
 
     def headers(self):
@@ -419,21 +470,6 @@ tokens = TokenManager()
 # ============================================================
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
-
-# ============================================================
-# ATC / OPENSKY
-# ============================================================
-
-ATC_LAT = 17.3542
-ATC_LON = 78.4100
-ATC_LAT_RADIUS = 7.0
-ATC_LON_RADIUS = 7.0
-ATC_MAX_AIRCRAFT = 20
-
-_atc_cache = None
-_atc_cache_time = None
-_atc_cache_duration = 60
-_atc_rate_limit_until = None
 
 # ============================================================
 # FAMILY
@@ -476,7 +512,6 @@ LOCAL_TASKS_FILE = BASE_DIR / "local_tasks.json"
 LOCAL_CALENDAR_FILE = BASE_DIR / "local_calendar.json"
 
 def load_local_tasks():
-    """Load tasks from local JSON file."""
     try:
         if LOCAL_TASKS_FILE.exists():
             with open(LOCAL_TASKS_FILE, 'r') as f:
@@ -487,7 +522,6 @@ def load_local_tasks():
         return {"tasks": [], "last_sync": None}
 
 def save_local_tasks(tasks):
-    """Save tasks to local JSON file."""
     try:
         with open(LOCAL_TASKS_FILE, 'w') as f:
             json.dump({
@@ -500,7 +534,6 @@ def save_local_tasks(tasks):
         return False
 
 def load_local_calendar():
-    """Load calendar events from local JSON file."""
     try:
         if LOCAL_CALENDAR_FILE.exists():
             with open(LOCAL_CALENDAR_FILE, 'r') as f:
@@ -511,7 +544,6 @@ def load_local_calendar():
         return {"events": [], "last_sync": None}
 
 def save_local_calendar(events):
-    """Save calendar events to local JSON file."""
     try:
         with open(LOCAL_CALENDAR_FILE, 'w') as f:
             json.dump({
@@ -530,7 +562,6 @@ def save_local_calendar(events):
 SCHEDULED_TASKS_FILE = BASE_DIR / "scheduled_tasks.json"
 
 def load_scheduled_tasks():
-    """Load scheduled tasks from JSON file."""
     try:
         if SCHEDULED_TASKS_FILE.exists():
             with open(SCHEDULED_TASKS_FILE, 'r') as f:
@@ -541,7 +572,6 @@ def load_scheduled_tasks():
         return {"tasks": []}
 
 def save_scheduled_tasks(tasks):
-    """Save scheduled tasks to JSON file."""
     try:
         with open(SCHEDULED_TASKS_FILE, 'w') as f:
             json.dump({"tasks": tasks}, f, indent=2)
@@ -551,11 +581,9 @@ def save_scheduled_tasks(tasks):
         return False
 
 def initialize_default_scheduled_task():
-    """Add the default 3 PM task if it doesn't exist."""
     scheduled_tasks = load_scheduled_tasks()
     tasks = scheduled_tasks.get("tasks", [])
     
-    # Check if 3 PM task already exists
     default_exists = any(
         task.get("hour") == 15 and 
         task.get("minute") == 0 and 
@@ -578,6 +606,7 @@ def initialize_default_scheduled_task():
         tasks.append(new_task)
         save_scheduled_tasks(tasks)
         print("✅ Default 3 PM scheduled task created: 'Daily Check-in'")
+        log_system("Default scheduled task created", {"task": "Daily Check-in", "time": "15:00"})
 
 # ============================================================
 # SCHEDULER
@@ -588,13 +617,10 @@ _scheduler_running = False
 _scheduler_lock = threading.Lock()
 
 def create_task_via_api(title, member_id="bhavesh"):
-    """Create a task via the API."""
     try:
-        # Try Google API first
         service = get_google_tasks_service()
         task_list = get_default_task_list(service)
         
-        # Get member name
         member = get_member(member_id)
         member_name = member["name"] if member else "Unassigned"
         
@@ -605,44 +631,19 @@ def create_task_via_api(title, member_id="bhavesh"):
         
         parsed = parse_task(created)
         
-        # Also save to local
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
         local_tasks.append(parsed)
         save_local_tasks(local_tasks)
         
-        print(f"✅ Scheduled task created: {title}")
+        log_task(f"Scheduled task created: {title}", {"member": member_name})
         return {"success": True, "task": parsed}
         
     except Exception as e:
-        print(f"⚠️ Scheduled task creation failed (Google): {e}")
-        
-        # Fallback to local
-        try:
-            member = get_member(member_id)
-            local_data = load_local_tasks()
-            local_tasks = local_data.get("tasks", [])
-            
-            new_task = {
-                "id": f"local_{datetime.now(timezone.utc).timestamp()}",
-                "title": title,
-                "member": member_id,
-                "member_name": member["name"] if member else member_id,
-                "member_emoji": member["emoji"] if member else "👤",
-                "task_list": "Local Tasks",
-                "local": True
-            }
-            local_tasks.append(new_task)
-            save_local_tasks(local_tasks)
-            
-            print(f"✅ Scheduled task saved locally: {title}")
-            return {"success": True, "task": new_task, "fallback": True}
-        except Exception as e2:
-            print(f"❌ Failed to create scheduled task: {e2}")
-            return {"success": False, "error": str(e2)}
+        log_error(f"Scheduled task creation failed: {e}")
+        return {"success": False, "error": str(e)}
 
 def run_scheduled_tasks():
-    """Check and run scheduled tasks."""
     try:
         scheduled_tasks = load_scheduled_tasks()
         tasks = scheduled_tasks.get("tasks", [])
@@ -652,16 +653,13 @@ def run_scheduled_tasks():
             if not task.get("enabled", True):
                 continue
             
-            # Check if it's time to run
             if now.hour == task["hour"] and now.minute == task["minute"]:
-                # Check if already ran today
                 last_run = task.get("last_run")
                 if last_run:
                     last_run_date = datetime.fromisoformat(last_run).date()
                     if last_run_date == now.date():
-                        continue  # Already ran today
+                        continue
                 
-                # Create the task
                 title = task["title"]
                 if task.get("label") and task.get("label") != "auto":
                     title = f"[{task['label']}] {title}"
@@ -669,7 +667,6 @@ def run_scheduled_tasks():
                 result = create_task_via_api(title, task.get("member", "bhavesh"))
                 
                 if result["success"]:
-                    # Update last_run
                     scheduled_tasks = load_scheduled_tasks()
                     tasks = scheduled_tasks.get("tasks", [])
                     for t in tasks:
@@ -677,34 +674,32 @@ def run_scheduled_tasks():
                             t["last_run"] = now.isoformat()
                             break
                     save_scheduled_tasks(tasks)
+                    log_success(f"Scheduled task executed: {title}")
                     
     except Exception as e:
-        print(f"⚠️ Scheduler error: {e}")
+        log_error(f"Scheduler error: {e}")
 
 def scheduler_loop():
-    """Main scheduler loop."""
     global _scheduler_running
     print("🔄 Scheduler started")
+    log_system("Scheduler started")
     
     while _scheduler_running:
         try:
             run_scheduled_tasks()
         except Exception as e:
-            print(f"⚠️ Scheduler loop error: {e}")
+            log_error(f"Scheduler loop error: {e}")
         
-        # Sleep for 30 seconds before checking again
         for _ in range(30):
             if not _scheduler_running:
                 break
             time.sleep(1)
 
 def start_scheduler():
-    """Start the scheduler in a background thread."""
     global _scheduler_thread, _scheduler_running
     
     with _scheduler_lock:
         if _scheduler_running:
-            print("ℹ️ Scheduler already running")
             return
         
         _scheduler_running = True
@@ -713,7 +708,6 @@ def start_scheduler():
         print("✅ Scheduler started")
 
 def stop_scheduler():
-    """Stop the scheduler."""
     global _scheduler_running, _scheduler_thread
     
     with _scheduler_lock:
@@ -723,10 +717,9 @@ def stop_scheduler():
         _scheduler_running = False
         if _scheduler_thread:
             _scheduler_thread.join(timeout=2)
-        print("✅ Scheduler stopped")
+        log_system("Scheduler stopped")
 
 def restart_scheduler():
-    """Restart the scheduler."""
     stop_scheduler()
     start_scheduler()
 
@@ -739,93 +732,34 @@ initialize_default_scheduled_task()
 # ============================================================
 
 def get_google_credentials():
-    """Get Google credentials from environment variables or local files."""
     creds = None
-    
-    # Try environment variables first (for Render)
-    creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    token_json = os.getenv("GOOGLE_TOKEN_JSON")
-    
-    if creds_json and token_json:
-        try:
-            print("🔑 Loading Google credentials from environment variables...")
-            creds_dict = json.loads(creds_json)
-            token_dict = json.loads(token_json)
-            
-            # Create credentials from stored info
-            creds = Credentials(
-                token=token_dict.get("token"),
-                refresh_token=token_dict.get("refresh_token"),
-                token_uri=token_dict.get("token_uri", "https://oauth2.googleapis.com/token"),
-                client_id=creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id"),
-                client_secret=creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret"),
-                scopes=SCOPES
-            )
-            
-            # Refresh if expired
-            if creds.expired and creds.refresh_token:
-                print("🔄 Refreshing Google token...")
-                creds.refresh(Request())
-            
-            print("✅ Google credentials loaded from environment")
-            return creds
-        except Exception as e:
-            print(f"⚠️ Failed to load Google credentials from env: {e}")
-    
-    # Fallback to local files (for local development)
     if TOKEN_FILE.exists():
         try:
-            print("📁 Loading Google credentials from local files...")
             creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-                TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
-            if creds and creds.valid:
-                print("✅ Google credentials loaded from local files")
-                return creds
-        except Exception as e:
-            print(f"⚠️ Failed to load from token.json: {e}")
+        except Exception:
             creds = None
-    
-    # If no credentials, try OAuth flow (local only)
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
     if not creds or not creds.valid:
         if not CREDENTIALS_FILE.exists():
-            print("⚠️ credentials.json not found. Using local storage only.")
-            return None
-        try:
-            print("🔐 Starting OAuth flow...")
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-            TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
-            print("✅ OAuth flow completed successfully")
-            return creds
-        except Exception as e:
-            print(f"⚠️ OAuth flow failed: {e}")
-            return None
-    
+            raise Exception("credentials.json not found.")
+        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+        creds = flow.run_local_server(port=0)
+        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
     return creds
 
 def get_google_tasks_service():
-    try:
-        return build("tasks", "v1", credentials=get_google_credentials())
-    except Exception as e:
-        print(f"⚠️ Google Tasks service unavailable: {e}")
-        return None
+    return build("tasks", "v1", credentials=get_google_credentials())
 
 def get_google_calendar_service():
-    try:
-        return build("calendar", "v3", credentials=get_google_credentials())
-    except Exception as e:
-        print(f"⚠️ Google Calendar service unavailable: {e}")
-        return None
+    return build("calendar", "v3", credentials=get_google_credentials())
 
 # ============================================================
 # TASK HELPERS
 # ============================================================
 
 def get_default_task_list(service):
-    if not service:
-        return None
     result = service.tasklists().list(maxResults=100).execute()
     lists = result.get("items", [])
     if not lists:
@@ -915,7 +849,7 @@ def get_system_status():
             "platform_release": platform.release(),
         }
     except Exception as e:
-        print(f"⚠️ System status error: {e}")
+        log_error(f"System status error: {e}")
         return {"status": "error", "error": str(e)}
 
 @app.get("/api/system/status")
@@ -927,9 +861,7 @@ def system_status():
 # ============================================================
 
 def get_washer_status_from_api():
-    """Fetch washing machine status from SmartThings API."""
     if not SMARTTHINGS_ENABLED:
-        print("⚠️ SmartThings not configured - token or device ID missing")
         return None
     
     try:
@@ -938,42 +870,41 @@ def get_washer_status_from_api():
             "Content-Type": "application/json"
         }
         
-        # Get device status
         url = f"https://api.smartthings.com/v1/devices/{SMARTTHINGS_DEVICE_ID}/status"
         response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code != 200:
-            print(f"⚠️ SmartThings API error: {response.status_code}")
-            if response.status_code == 401:
-                print("   Invalid token - please check SMARTTHINGS_TOKEN")
+            log_warning(f"SmartThings API error: {response.status_code}")
             return None
         
         data = response.json()
         status = parse_washer_status(data)
+        
+        if status:
+            log_washer(f"Status updated: {status['status']} - {status['cycle']}", {
+                "status": status['status'],
+                "cycle": status['cycle'],
+                "progress": status['progress']
+            })
+        
         return status
         
     except requests.exceptions.Timeout:
-        print("⚠️ SmartThings API timeout")
+        log_warning("SmartThings API timeout")
         return None
     except Exception as e:
-        print(f"⚠️ SmartThings error: {e}")
+        log_error(f"SmartThings error: {e}")
         return None
 
 def parse_washer_status(data):
-    """Parse the SmartThings API response for washing machine status."""
     try:
-        # Get the components/status
         components = data.get("components", {})
-        
-        # Check all components for capabilities
         capabilities = {}
         
-        # First check "main" component
         main = components.get("main", {})
         if "capabilities" in main:
             capabilities = main.get("capabilities", {})
         
-        # If no capabilities in main, try to find them elsewhere
         if not capabilities:
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict) and "capabilities" in comp_data:
@@ -981,7 +912,6 @@ def parse_washer_status(data):
                     if capabilities:
                         break
         
-        # IMPORTANT: Also check for top-level capabilities that might not be in "main"
         if not capabilities.get("samsungce.washerOperatingState"):
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
@@ -990,31 +920,8 @@ def parse_washer_status(data):
                             if key not in capabilities:
                                 capabilities[key] = value
         
-        # If still no capabilities, try using the raw data directly
-        if not capabilities:
-            for key, value in data.items():
-                if key == "samsungce.washerOperatingState" or "washerOperatingState" in key:
-                    capabilities[key] = value
+        washer_ops = capabilities.get("samsungce.washerOperatingState", {})
         
-        # Get washer operating state - try multiple locations
-        washer_ops = {}
-        
-        if "samsungce.washerOperatingState" in capabilities:
-            washer_ops = capabilities.get("samsungce.washerOperatingState", {})
-        else:
-            for key, value in data.items():
-                if "washerOperatingState" in key:
-                    washer_ops = value
-                    break
-        
-        if not washer_ops:
-            for comp_name, comp_data in components.items():
-                if isinstance(comp_data, dict):
-                    if "samsungce.washerOperatingState" in comp_data:
-                        washer_ops = comp_data.get("samsungce.washerOperatingState", {})
-                        break
-        
-        # Get the key status values
         operating_state = washer_ops.get("operatingState", {}).get("value", "unknown")
         washer_job_state = washer_ops.get("washerJobState", {}).get("value", "unknown")
         washer_job_phase = washer_ops.get("washerJobPhase", {}).get("value", "unknown")
@@ -1022,77 +929,49 @@ def parse_washer_status(data):
         remaining_time = washer_ops.get("remainingTime", {}).get("value", 0)
         remaining_time_str = washer_ops.get("remainingTimeStr", {}).get("value", "")
         
-        # Get switch state - try multiple locations
         switch_state = "unknown"
         if "switch" in capabilities:
             switch_state = capabilities.get("switch", {}).get("switch", {}).get("value", "unknown")
         elif "samsungce.switch" in capabilities:
             switch_state = capabilities.get("samsungce.switch", {}).get("switch", {}).get("value", "unknown")
-        else:
-            for comp_name, comp_data in components.items():
-                if isinstance(comp_data, dict):
-                    if "switch" in comp_data:
-                        switch_state = comp_data.get("switch", {}).get("switch", {}).get("value", "unknown")
-                        break
-                    if "samsungce.switch" in comp_data:
-                        switch_state = comp_data.get("samsungce.switch", {}).get("switch", {}).get("value", "unknown")
-                        break
         
-        # Get cycle info - try multiple locations
         course = "unknown"
         if "custom.supportedOptions" in capabilities:
             course = capabilities.get("custom.supportedOptions", {}).get("course", {}).get("value", "unknown")
-        else:
-            for comp_name, comp_data in components.items():
-                if isinstance(comp_data, dict):
-                    if "custom.supportedOptions" in comp_data:
-                        course = comp_data.get("custom.supportedOptions", {}).get("course", {}).get("value", "unknown")
-                        break
         
-        # Determine the status
         status_key = "idle"
-        
-        # Check if running
         is_running = False
         
         if operating_state == "running":
             is_running = True
         elif switch_state == "on":
             is_running = True
-        elif washer_job_state in ["running", "drumCleaning", "wash", "rinse", "spin", "washing", "drying"]:
+        elif washer_job_state in ["running", "drumCleaning", "wash", "rinse", "spin"]:
             is_running = True
-        elif washer_job_phase in ["running", "drumCleaning", "wash", "rinse", "spin", "washing", "drying"]:
+        elif washer_job_phase in ["running", "drumCleaning", "wash", "rinse", "spin"]:
             is_running = True
         
-        # Check if completed
         is_completed = False
         if washer_job_state == "finished" or washer_job_phase == "finished":
             is_completed = True
         elif progress == 100:
             is_completed = True
         
-        # Determine final status
         if is_completed:
             status_key = "completed"
         elif is_running:
             status_key = "running"
         elif operating_state == "paused":
             status_key = "paused"
-        else:
-            status_key = "idle"
         
-        # Special case for Drum Clean
         if washer_job_state == "drumCleaning" or washer_job_phase == "drumCleaning":
             status_key = "running"
         
-        # Get status info
         status_info = WASHER_STATUS_MAP.get(status_key, WASHER_STATUS_MAP["unknown"])
         
-        # Determine cycle name - FIXED: removed duplicate emoji
         cycle_name = "Unknown"
         cycle_icon = "🔄"
         
-        # Check if it's Drum Clean
         if washer_job_state == "drumCleaning" or washer_job_phase == "drumCleaning":
             cycle_name = "Drum Clean"
             cycle_icon = "🧹"
@@ -1101,12 +980,6 @@ def parse_washer_status(data):
             cycle_name = cycle_info["name"]
             cycle_icon = cycle_info["icon"]
         
-        # If still unknown, try to determine from job state
-        if cycle_name == "Unknown" and washer_job_state not in ["unknown", "finished", "none"]:
-            cycle_name = f"{washer_job_state.capitalize()}"
-            cycle_icon = "⚙️"
-        
-        # Build result
         result = {
             "status": status_info["status"],
             "display": status_info["display"],
@@ -1123,20 +996,16 @@ def parse_washer_status(data):
             "job_state": washer_job_state,
             "job_phase": washer_job_phase,
             "switch_state": switch_state,
-            "raw_data": data
         }
         
         return result
         
     except Exception as e:
-        print(f"⚠️ Error parsing washer status: {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(f"Error parsing washer status: {e}")
         return None
 
 @app.get("/api/smartthings/washer")
 def get_washer_status():
-    """Get washing machine status from SmartThings."""
     global _smartthings_cache, _smartthings_cache_time
     
     if not SMARTTHINGS_ENABLED:
@@ -1147,11 +1016,9 @@ def get_washer_status():
         }
     
     try:
-        # Check cache
         if _smartthings_cache and _smartthings_cache_time:
             elapsed = (datetime.now(timezone.utc) - _smartthings_cache_time).total_seconds()
             if elapsed < _smartthings_cache_duration:
-                print(f"🧺 Returning cached washer status ({elapsed:.1f}s old)")
                 return {
                     "success": True,
                     "enabled": True,
@@ -1179,64 +1046,65 @@ def get_washer_status():
             }
             
     except Exception as e:
-        print(f"❌ Washer status error: {e}")
+        log_error(f"Washer status error: {e}")
         return {
             "success": False,
             "enabled": True,
             "error": str(e)
         }
 
-@app.get("/api/smartthings/device-info")
-def get_smartthings_device_info():
-    """Get basic device info from SmartThings."""
-    if not SMARTTHINGS_ENABLED:
-        return {
-            "success": False,
-            "enabled": False,
-            "error": "SmartThings not configured"
-        }
-    
-    try:
-        headers = {
-            "Authorization": f"Bearer {SMARTTHINGS_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        
-        # Get device info
-        url = f"https://api.smartthings.com/v1/devices/{SMARTTHINGS_DEVICE_ID}"
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code != 200:
-            return {
-                "success": False,
-                "error": f"API error: {response.status_code}"
-            }
-        
-        data = response.json()
-        return {
-            "success": True,
-            "device": data
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+# ============================================================
+# LOGS ENDPOINTS
+# ============================================================
 
-@app.get("/api/smartthings/debug")
-def debug_smartthings():
-    """Debug endpoint to see raw API response."""
-    if not SMARTTHINGS_ENABLED:
-        return {"error": "Not configured"}
+@app.get("/api/logs")
+def get_logs(limit: int = 50, type_filter: str = None):
+    """Get system logs."""
+    log_data = load_logs()
+    logs = log_data.get("logs", [])
     
-    try:
-        headers = {"Authorization": f"Bearer {SMARTTHINGS_TOKEN}"}
-        url = f"https://api.smartthings.com/v1/devices/{SMARTTHINGS_DEVICE_ID}/status"
-        response = requests.get(url, headers=headers, timeout=10)
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
+    if type_filter:
+        logs = [log for log in logs if log.get("type") == type_filter]
+    
+    return {
+        "logs": logs[:limit],
+        "total": len(log_data.get("logs", [])),
+        "filtered_count": len(logs)
+    }
+
+@app.delete("/api/logs")
+def clear_logs():
+    """Clear all logs."""
+    save_logs({"logs": []})
+    log_system("Logs cleared")
+    return {"success": True}
+
+@app.get("/api/logs/stats")
+def get_log_stats():
+    """Get log statistics."""
+    log_data = load_logs()
+    logs = log_data.get("logs", [])
+    
+    stats = {
+        "total": len(logs),
+        "by_type": {},
+        "last_24h": 0
+    }
+    
+    now = datetime.now(timezone.utc)
+    for log in logs:
+        log_type = log.get("type", "unknown")
+        stats["by_type"][log_type] = stats["by_type"].get(log_type, 0) + 1
+        
+        try:
+            log_time = datetime.fromisoformat(log.get("timestamp", ""))
+            diff = now - log_time
+            if diff.days < 1:
+                stats["last_24h"] += 1
+        except:
+            pass
+    
+    return stats
 
 # ============================================================
 # HOME
@@ -1252,7 +1120,6 @@ def home():
 
 @app.get("/discover")
 def discover_page():
-    """Discovery page to help find the dashboard."""
     return FileResponse(BASE_DIR / "static" / "discover.html")
 
 # ============================================================
@@ -1270,11 +1137,7 @@ def get_family():
 @app.get("/api/tasks")
 def get_tasks():
     try:
-        # Try Google API first
         service = get_google_tasks_service()
-        if not service:
-            raise Exception("Google Tasks service unavailable")
-            
         task_lists = service.tasklists().list(maxResults=100).execute()
         all_tasks = []
         for task_list in task_lists.get("items", []):
@@ -1289,9 +1152,7 @@ def get_tasks():
                 parsed["task_list"] = task_list.get("title", "Tasks")
                 all_tasks.append(parsed)
         
-        # Sync to local as backup
         save_local_tasks(all_tasks)
-        
         return {
             "tasks": all_tasks,
             "source": "google",
@@ -1299,9 +1160,7 @@ def get_tasks():
         }
         
     except Exception as e:
-        print(f"⚠️ Google Tasks error: {e}, using local fallback")
-        
-        # Fallback to local storage
+        log_warning(f"Google Tasks error: {e}, using local fallback")
         local_data = load_local_tasks()
         return {
             "tasks": local_data.get("tasks", []),
@@ -1319,60 +1178,32 @@ def create_task(task: TaskCreate):
         if not member:
             raise Exception("Invalid family member.")
         
-        # Try Google API first
         service = get_google_tasks_service()
-        if service:
-            task_list = get_default_task_list(service)
-            if task_list:
-                created = service.tasks().insert(
-                    tasklist=task_list["id"],
-                    body={"title": make_task_title(task.title, task.member)},
-                ).execute()
-                
-                parsed = parse_task(created)
-                
-                # Also save to local
-                local_data = load_local_tasks()
-                local_tasks = local_data.get("tasks", [])
-                local_tasks.append(parsed)
-                save_local_tasks(local_tasks)
-                
-                return {
-                    "success": True, 
-                    "task": parsed,
-                    "source": "google",
-                    "fallback": False
-                }
+        task_list = get_default_task_list(service)
+        created = service.tasks().insert(
+            tasklist=task_list["id"],
+            body={"title": make_task_title(task.title, task.member)},
+        ).execute()
         
-        # Fallback to local storage
-        member = get_member(task.member)
+        parsed = parse_task(created)
+        
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
-        
-        new_task = {
-            "id": f"local_{datetime.now(timezone.utc).timestamp()}",
-            "title": task.title.strip(),
-            "member": task.member,
-            "member_name": member["name"] if member else task.member,
-            "member_emoji": member["emoji"] if member else "👤",
-            "task_list": "Local Tasks",
-            "local": True
-        }
-        local_tasks.append(new_task)
+        local_tasks.append(parsed)
         save_local_tasks(local_tasks)
         
+        log_task(f"Task created: {task.title}", {"member": task.member, "source": "google"})
+        
         return {
-            "success": True,
-            "task": new_task,
-            "source": "local",
-            "fallback": True,
-            "fallback_reason": "Google service unavailable"
+            "success": True, 
+            "task": parsed,
+            "source": "google",
+            "fallback": False
         }
         
     except Exception as e:
-        print(f"⚠️ Task create error: {e}, using local fallback")
+        log_warning(f"Google Tasks create error: {e}, using local fallback")
         
-        # Fallback to local storage
         member = get_member(task.member)
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
@@ -1388,6 +1219,8 @@ def create_task(task: TaskCreate):
         }
         local_tasks.append(new_task)
         save_local_tasks(local_tasks)
+        
+        log_task(f"Task created locally: {task.title}", {"member": task.member, "source": "local"})
         
         return {
             "success": True,
@@ -1400,52 +1233,37 @@ def create_task(task: TaskCreate):
 @app.post("/api/tasks/{task_id}/complete")
 def complete_task(task_id: str):
     try:
-        # Try Google API first
         service = get_google_tasks_service()
-        if service:
-            task_list = get_default_task_list(service)
-            if task_list:
-                result = service.tasks().patch(
-                    tasklist=task_list["id"],
-                    task=task_id,
-                    body={"status": "completed"},
-                ).execute()
-                
-                # Remove from local if it exists
-                local_data = load_local_tasks()
-                local_tasks = local_data.get("tasks", [])
-                local_tasks = [t for t in local_tasks if t.get("id") != task_id]
-                save_local_tasks(local_tasks)
-                
-                return {
-                    "success": True, 
-                    "task": result["id"],
-                    "source": "google",
-                    "fallback": False
-                }
+        task_list = get_default_task_list(service)
+        result = service.tasks().patch(
+            tasklist=task_list["id"],
+            task=task_id,
+            body={"status": "completed"},
+        ).execute()
         
-        # Fallback: remove from local
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
         local_tasks = [t for t in local_tasks if t.get("id") != task_id]
         save_local_tasks(local_tasks)
         
+        log_task(f"Task completed: {task_id}", {"source": "google"})
+        
         return {
-            "success": True,
-            "task": task_id,
-            "source": "local",
-            "fallback": True,
-            "fallback_reason": "Google service unavailable"
+            "success": True, 
+            "task": result["id"],
+            "source": "google",
+            "fallback": False
         }
         
     except Exception as e:
-        print(f"⚠️ Task complete error: {e}")
+        log_warning(f"Google Tasks complete error: {e}, using local fallback")
         
-        # Fallback: remove from local
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
         local_tasks = [t for t in local_tasks if t.get("id") != task_id]
         save_local_tasks(local_tasks)
+        
+        log_task(f"Task completed locally: {task_id}", {"source": "local"})
         
         return {
             "success": True,
@@ -1462,11 +1280,7 @@ def complete_task(task_id: str):
 @app.get("/api/calendar")
 def get_calendar():
     try:
-        # Try Google API first
         service = get_google_calendar_service()
-        if not service:
-            raise Exception("Google Calendar service unavailable")
-            
         now = datetime.now(timezone.utc).isoformat()
         result = service.events().list(
             calendarId="primary",
@@ -1489,9 +1303,7 @@ def get_calendar():
                 "all_day": "date" in start,
             })
         
-        # Sync to local as backup
         save_local_calendar(events)
-        
         return {
             "events": events,
             "source": "google",
@@ -1499,9 +1311,7 @@ def get_calendar():
         }
         
     except Exception as e:
-        print(f"⚠️ Google Calendar error: {e}, using local fallback")
-        
-        # Fallback to local storage
+        log_warning(f"Google Calendar error: {e}, using local fallback")
         local_data = load_local_calendar()
         return {
             "events": local_data.get("events", []),
@@ -1516,69 +1326,41 @@ def create_calendar_event(event: EventCreate):
         if not event.title.strip():
             raise Exception("Event title cannot be empty.")
         
-        # Try Google API first
         service = get_google_calendar_service()
-        if service:
-            start_datetime = f"{event.date}T{event.start_time}:00"
-            end_datetime = f"{event.date}T{event.end_time}:00"
-            body = {
-                "summary": event.title.strip(),
-                "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
-                "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
-            }
-            created = service.events().insert(calendarId="primary", body=body).execute()
-            
-            event_data = {
-                "id": created.get("id"),
-                "title": created.get("summary"),
-                "start": created["start"].get("dateTime"),
-                "end": created["end"].get("dateTime"),
-                "all_day": False,
-            }
-            
-            # Also save to local
-            local_data = load_local_calendar()
-            local_events = local_data.get("events", [])
-            local_events.append(event_data)
-            save_local_calendar(local_events)
-            
-            return {
-                "success": True,
-                "event": event_data,
-                "source": "google",
-                "fallback": False
-            }
-        
-        # Fallback to local storage
         start_datetime = f"{event.date}T{event.start_time}:00"
         end_datetime = f"{event.date}T{event.end_time}:00"
+        body = {
+            "summary": event.title.strip(),
+            "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
+            "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
+        }
+        created = service.events().insert(calendarId="primary", body=body).execute()
+        
+        event_data = {
+            "id": created.get("id"),
+            "title": created.get("summary"),
+            "start": created["start"].get("dateTime"),
+            "end": created["end"].get("dateTime"),
+            "all_day": False,
+        }
         
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
-        
-        new_event = {
-            "id": f"local_{datetime.now(timezone.utc).timestamp()}",
-            "title": event.title.strip(),
-            "start": start_datetime,
-            "end": end_datetime,
-            "all_day": False,
-            "local": True
-        }
-        local_events.append(new_event)
+        local_events.append(event_data)
         save_local_calendar(local_events)
+        
+        log_info(f"Calendar event created: {event.title}", {"date": event.date, "time": f"{event.start_time}-{event.end_time}"})
         
         return {
             "success": True,
-            "event": new_event,
-            "source": "local",
-            "fallback": True,
-            "fallback_reason": "Google service unavailable"
+            "event": event_data,
+            "source": "google",
+            "fallback": False
         }
         
     except Exception as e:
-        print(f"⚠️ Calendar create error: {e}")
+        log_warning(f"Google Calendar create error: {e}, using local fallback")
         
-        # Fallback to local storage
         start_datetime = f"{event.date}T{event.start_time}:00"
         end_datetime = f"{event.date}T{event.end_time}:00"
         
@@ -1595,6 +1377,8 @@ def create_calendar_event(event: EventCreate):
         }
         local_events.append(new_event)
         save_local_calendar(local_events)
+        
+        log_info(f"Calendar event created locally: {event.title}", {"date": event.date, "source": "local"})
         
         return {
             "success": True,
@@ -1607,65 +1391,48 @@ def create_calendar_event(event: EventCreate):
 @app.delete("/api/calendar/{event_id}")
 def delete_calendar_event(event_id: str):
     try:
-        # Try Google API first
         service = get_google_calendar_service()
-        if service:
-            try:
-                event = service.events().get(calendarId='primary', eventId=event_id).execute()
-                print(f"✅ Found event: '{event.get('summary', 'Untitled')}' (ID: {event_id})")
-                service.events().delete(calendarId='primary', eventId=event_id).execute()
-                print(f"✅ Event deleted successfully: {event_id}")
-                
-                # Also remove from local
-                local_data = load_local_calendar()
-                local_events = local_data.get("events", [])
+        try:
+            event = service.events().get(calendarId='primary', eventId=event_id).execute()
+        except Exception as e:
+            local_data = load_local_calendar()
+            local_events = local_data.get("events", [])
+            local_event = next((e for e in local_events if e.get("id") == event_id), None)
+            if local_event:
                 local_events = [e for e in local_events if e.get("id") != event_id]
                 save_local_calendar(local_events)
-                
+                log_info(f"Local event deleted: {event_id}")
                 return {
                     "success": True, 
-                    "message": "Event deleted successfully",
+                    "message": "Local event deleted successfully",
                     "event_id": event_id,
-                    "source": "google",
-                    "fallback": False
+                    "source": "local",
+                    "fallback": True
                 }
-            except Exception as e:
-                print(f"⚠️ Event not found in Google: {e}")
-                # Check if it's a local event
-                local_data = load_local_calendar()
-                local_events = local_data.get("events", [])
-                local_event = next((e for e in local_events if e.get("id") == event_id), None)
-                if local_event:
-                    local_events = [e for e in local_events if e.get("id") != event_id]
-                    save_local_calendar(local_events)
-                    return {
-                        "success": True, 
-                        "message": "Local event deleted successfully",
-                        "event_id": event_id,
-                        "source": "local",
-                        "fallback": True
-                    }
-                return JSONResponse(
-                    status_code=404,
-                    content={"success": False, "error": "Event not found", "event_id": event_id}
-                )
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Event not found", "event_id": event_id}
+            )
         
-        # Try local deletion as fallback
+        service.events().delete(calendarId='primary', eventId=event_id).execute()
+        
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
         local_events = [e for e in local_events if e.get("id") != event_id]
         save_local_calendar(local_events)
+        
+        log_info(f"Calendar event deleted: {event_id}")
+        
         return {
-            "success": True,
-            "message": "Event deleted from local storage",
+            "success": True, 
+            "message": "Event deleted successfully",
             "event_id": event_id,
-            "source": "local",
-            "fallback": True
+            "source": "google",
+            "fallback": False
         }
         
     except Exception as e:
-        print(f"❌ Delete error: {e}")
-        # Try local deletion as fallback
+        log_error(f"Delete error: {e}")
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
         local_events = [e for e in local_events if e.get("id") != event_id]
@@ -1679,34 +1446,28 @@ def delete_calendar_event(event_id: str):
         }
 
 # ============================================================
-# SYNC LOCAL DATA TO GOOGLE (When API comes back online)
+# SYNC LOCAL DATA TO GOOGLE
 # ============================================================
 
 @app.post("/api/sync/tasks")
 def sync_tasks_to_google():
-    """Sync local tasks to Google when it comes back online."""
     try:
-        # Check if Google is available
-        service = get_google_tasks_service()
-        if not service:
+        try:
+            service = get_google_tasks_service()
+            service.tasklists().list(maxResults=1).execute()
+        except Exception as e:
             return JSONResponse(
                 status_code=503,
-                content={"success": False, "error": "Google Tasks not available"}
+                content={"success": False, "error": "Google Tasks not available", "details": str(e)}
             )
         
-        service.tasklists().list(maxResults=1).execute()
-        
-        # Load local tasks
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
         
         if not local_tasks:
             return {"success": True, "synced": 0, "message": "No local tasks to sync"}
         
-        # Get default task list
         task_list = get_default_task_list(service)
-        if not task_list:
-            return {"success": False, "error": "No task list found"}
         
         synced = 0
         failed = 0
@@ -1714,7 +1475,6 @@ def sync_tasks_to_google():
         for task in local_tasks:
             if task.get("local") and not task.get("synced_to_google"):
                 try:
-                    # Create the task in Google
                     member = get_member(task.get("member", "unknown"))
                     member_name = member["name"] if member else "Unassigned"
                     
@@ -1727,11 +1487,10 @@ def sync_tasks_to_google():
                     task["google_id"] = created.get("id")
                     synced += 1
                 except Exception as e:
-                    print(f"⚠️ Failed to sync task: {e}")
                     failed += 1
         
-        # Save updated local tasks
         save_local_tasks(local_tasks)
+        log_success(f"Synced {synced} local tasks to Google")
         
         return {
             "success": True,
@@ -1741,6 +1500,7 @@ def sync_tasks_to_google():
         }
         
     except Exception as e:
+        log_error(f"Sync tasks error: {e}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
@@ -1748,19 +1508,16 @@ def sync_tasks_to_google():
 
 @app.post("/api/sync/calendar")
 def sync_calendar_to_google():
-    """Sync local calendar events to Google when it comes back online."""
     try:
-        # Check if Google is available
-        service = get_google_calendar_service()
-        if not service:
+        try:
+            service = get_google_calendar_service()
+            service.events().list(calendarId="primary", maxResults=1).execute()
+        except Exception as e:
             return JSONResponse(
                 status_code=503,
-                content={"success": False, "error": "Google Calendar not available"}
+                content={"success": False, "error": "Google Calendar not available", "details": str(e)}
             )
         
-        service.events().list(calendarId="primary", maxResults=1).execute()
-        
-        # Load local events
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
         
@@ -1773,7 +1530,6 @@ def sync_calendar_to_google():
         for event in local_events:
             if event.get("local") and not event.get("synced_to_google"):
                 try:
-                    # Create the event in Google
                     body = {
                         "summary": event["title"],
                         "start": {"dateTime": event["start"], "timeZone": "Asia/Kolkata"},
@@ -1785,11 +1541,10 @@ def sync_calendar_to_google():
                     event["google_id"] = created.get("id")
                     synced += 1
                 except Exception as e:
-                    print(f"⚠️ Failed to sync event: {e}")
                     failed += 1
         
-        # Save updated local events
         save_local_calendar(local_events)
+        log_success(f"Synced {synced} local events to Google")
         
         return {
             "success": True,
@@ -1799,39 +1554,35 @@ def sync_calendar_to_google():
         }
         
     except Exception as e:
+        log_error(f"Sync calendar error: {e}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
         )
 
 # ============================================================
-# API STATUS ENDPOINT - Check if Google APIs are working
+# API STATUS ENDPOINT
 # ============================================================
 
 @app.get("/api/status/google")
 def check_google_status():
-    """Check if Google APIs are available."""
     results = {
         "tasks": {"available": False, "error": None},
         "calendar": {"available": False, "error": None},
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
-    # Check Tasks
     try:
         service = get_google_tasks_service()
-        if service:
-            service.tasklists().list(maxResults=1).execute()
-            results["tasks"]["available"] = True
+        service.tasklists().list(maxResults=1).execute()
+        results["tasks"]["available"] = True
     except Exception as e:
         results["tasks"]["error"] = str(e)
     
-    # Check Calendar
     try:
         service = get_google_calendar_service()
-        if service:
-            service.events().list(calendarId="primary", maxResults=1).execute()
-            results["calendar"]["available"] = True
+        service.events().list(calendarId="primary", maxResults=1).execute()
+        results["calendar"]["available"] = True
     except Exception as e:
         results["calendar"]["error"] = str(e)
     
@@ -1843,12 +1594,10 @@ def check_google_status():
 
 @app.get("/api/scheduled-tasks")
 def get_scheduled_tasks():
-    """Get all scheduled tasks."""
     return {"tasks": load_scheduled_tasks().get("tasks", [])}
 
 @app.post("/api/scheduled-tasks")
 def create_scheduled_task(task: ScheduledTaskCreate):
-    """Create a new scheduled task."""
     try:
         if not task.title.strip():
             raise Exception("Task title cannot be empty.")
@@ -1873,37 +1622,12 @@ def create_scheduled_task(task: ScheduledTaskCreate):
         tasks.append(new_task)
         save_scheduled_tasks(tasks)
         
-        # Restart scheduler to pick up new task
         restart_scheduler()
+        log_task(f"Scheduled task created: {task.title}", {"time": f"{task.hour:02d}:{task.minute:02d}"})
         
         return {"success": True, "task": new_task}
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "error": str(e)}
-        )
-
-@app.put("/api/scheduled-tasks/{task_id}")
-def update_scheduled_task(task_id: str, task: ScheduledTaskCreate):
-    """Update a scheduled task."""
-    try:
-        scheduled_tasks = load_scheduled_tasks()
-        tasks = scheduled_tasks.get("tasks", [])
-        
-        for t in tasks:
-            if t["id"] == task_id:
-                t["title"] = task.title.strip()
-                t["hour"] = task.hour
-                t["minute"] = task.minute
-                t["member"] = task.member
-                t["enabled"] = task.enabled
-                t["label"] = task.label if task.label != "auto" else f"Daily at {task.hour:02d}:{task.minute:02d}"
-                save_scheduled_tasks(tasks)
-                restart_scheduler()
-                return {"success": True, "task": t}
-        
-        raise Exception("Task not found")
-    except Exception as e:
+        log_error(f"Create scheduled task error: {e}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
@@ -1911,15 +1635,16 @@ def update_scheduled_task(task_id: str, task: ScheduledTaskCreate):
 
 @app.delete("/api/scheduled-tasks/{task_id}")
 def delete_scheduled_task(task_id: str):
-    """Delete a scheduled task."""
     try:
         scheduled_tasks = load_scheduled_tasks()
         tasks = scheduled_tasks.get("tasks", [])
         tasks = [t for t in tasks if t["id"] != task_id]
         save_scheduled_tasks(tasks)
         restart_scheduler()
+        log_task(f"Scheduled task deleted: {task_id}")
         return {"success": True}
     except Exception as e:
+        log_error(f"Delete scheduled task error: {e}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
@@ -1927,7 +1652,6 @@ def delete_scheduled_task(task_id: str):
 
 @app.post("/api/scheduled-tasks/{task_id}/toggle")
 def toggle_scheduled_task(task_id: str):
-    """Enable/disable a scheduled task."""
     try:
         scheduled_tasks = load_scheduled_tasks()
         tasks = scheduled_tasks.get("tasks", [])
@@ -1937,10 +1661,12 @@ def toggle_scheduled_task(task_id: str):
                 t["enabled"] = not t.get("enabled", True)
                 save_scheduled_tasks(tasks)
                 restart_scheduler()
+                log_task(f"Scheduled task toggled: {task_id} - {'enabled' if t['enabled'] else 'disabled'}")
                 return {"success": True, "enabled": t["enabled"]}
         
         raise Exception("Task not found")
     except Exception as e:
+        log_error(f"Toggle scheduled task error: {e}")
         return JSONResponse(
             status_code=500,
             content={"success": False, "error": str(e)}
@@ -1948,18 +1674,15 @@ def toggle_scheduled_task(task_id: str):
 
 @app.get("/api/scheduler/status")
 def get_scheduler_status():
-    """Get scheduler status."""
     scheduled_tasks = load_scheduled_tasks()
     tasks = scheduled_tasks.get("tasks", [])
     
-    # Calculate next runs
     now = datetime.now()
     next_runs = []
     
     for task in tasks:
         if not task.get("enabled", True):
             continue
-        # Calculate next run time
         run_time = datetime(now.year, now.month, now.day, task["hour"], task["minute"])
         if run_time <= now:
             run_time = run_time + timedelta(days=1)
@@ -1982,80 +1705,44 @@ def get_scheduler_status():
 # ============================================================
 
 def clean_html_text(text):
-    """Remove HTML tags from text."""
     if not text:
         return ""
-    # Remove HTML tags
     text = re.sub(r'<[^>]+>', '', text)
-    # Decode HTML entities
     text = html.unescape(text)
-    # Remove extra whitespace
     text = ' '.join(text.split())
     return text
 
 def fetch_news_from_rss(feed_url, max_items=3):
-    """Fetch news from an RSS feed."""
     try:
         feed = feedparser.parse(feed_url)
         articles = []
         
         for entry in feed.entries[:max_items]:
             try:
-                # Get title
                 title = entry.get('title', '')
                 title = clean_html_text(title)
                 if not title:
                     continue
                 
-                # Get description/summary
                 description = entry.get('description') or entry.get('summary') or ''
                 description = clean_html_text(description)
                 if len(description) > 200:
                     description = description[:197] + '...'
                 
-                # Get source name
                 source = entry.get('source', {}).get('title', '')
                 if not source:
                     source = entry.get('author', '')
                 if not source:
-                    # Try to extract from URL
                     url = entry.get('link', '')
                     if 'timesofindia' in url:
                         source = 'Times of India'
                     elif 'thehindu' in url:
                         source = 'The Hindu'
-                    elif 'indianexpress' in url:
-                        source = 'Indian Express'
-                    elif 'ndtv' in url:
-                        source = 'NDTV'
                     elif 'bbc' in url:
                         source = 'BBC News'
-                    elif 'nytimes' in url:
-                        source = 'NY Times'
-                    elif 'reuters' in url:
-                        source = 'Reuters'
-                    elif 'aljazeera' in url:
-                        source = 'Al Jazeera'
-                    elif 'techcrunch' in url:
-                        source = 'TechCrunch'
-                    elif 'wired' in url:
-                        source = 'Wired'
-                    elif 'theverge' in url:
-                        source = 'The Verge'
-                    elif 'arstechnica' in url:
-                        source = 'Ars Technica'
-                    elif 'aviationweek' in url:
-                        source = 'Aviation Week'
-                    elif 'flightglobal' in url:
-                        source = 'FlightGlobal'
-                    elif 'ainonline' in url:
-                        source = 'AIN Online'
-                    elif 'simpleflying' in url:
-                        source = 'Simple Flying'
                     else:
                         source = 'News'
                 
-                # Get published date
                 published = entry.get('published', '')
                 if not published:
                     published = entry.get('updated', '')
@@ -2069,7 +1756,6 @@ def fetch_news_from_rss(feed_url, max_items=3):
                 else:
                     published = 'Recent'
                 
-                # Get URL
                 url = entry.get('link', '#')
                 
                 articles.append({
@@ -2080,16 +1766,13 @@ def fetch_news_from_rss(feed_url, max_items=3):
                     'published': published
                 })
             except Exception as e:
-                print(f"⚠️ Error parsing RSS entry: {e}")
                 continue
         
         return articles
     except Exception as e:
-        print(f"⚠️ RSS fetch error for {feed_url}: {e}")
         return []
 
 def fetch_news_from_newsapi(category_config):
-    """Fetch news from NewsAPI."""
     if not NEWS_API_ENABLED:
         return None
     
@@ -2133,26 +1816,19 @@ def fetch_news_from_newsapi(category_config):
                 return articles
         return None
     except Exception as e:
-        print(f"⚠️ NewsAPI exception: {e}")
         return None
 
 def fetch_news_from_multiple_sources(category, category_config):
-    """Fetch news from multiple sources for a category."""
     all_articles = []
-    sources_used = []
     
-    # Try NewsAPI first
     if NEWS_API_ENABLED:
         try:
             articles = fetch_news_from_newsapi(category_config)
             if articles:
                 all_articles.extend(articles)
-                sources_used.append("NewsAPI")
-                print(f"✅ NewsAPI returned {len(articles)} articles for {category}")
         except Exception as e:
-            print(f"⚠️ NewsAPI error for {category}: {e}")
+            pass
     
-    # If NewsAPI didn't return enough articles, try RSS feeds
     if len(all_articles) < 3:
         feeds = RSS_FEEDS.get(category, [])
         for feed_url in feeds:
@@ -2160,15 +1836,11 @@ def fetch_news_from_multiple_sources(category, category_config):
                 articles = fetch_news_from_rss(feed_url, 3)
                 if articles:
                     all_articles.extend(articles)
-                    sources_used.append(feed_url.split('/')[2] if '//' in feed_url else 'RSS')
-                    print(f"✅ RSS returned {len(articles)} articles for {category}")
                     if len(all_articles) >= 3:
                         break
             except Exception as e:
-                print(f"⚠️ RSS error for {category}: {e}")
                 continue
     
-    # Remove duplicates based on title
     seen_titles = set()
     unique_articles = []
     for article in all_articles:
@@ -2177,17 +1849,14 @@ def fetch_news_from_multiple_sources(category, category_config):
             seen_titles.add(title_lower)
             unique_articles.append(article)
     
-    # Limit to 3 articles per category
     unique_articles = unique_articles[:3]
     
     if unique_articles:
-        print(f"✅ {category}: {len(unique_articles)} articles from {len(sources_used)} sources")
         return unique_articles
     else:
         return None
 
 def get_fallback_news(error_message=None):
-    """Return fallback news articles if all APIs fail."""
     global _fallback_news_cache
     
     if _fallback_news_cache:
@@ -2232,23 +1901,18 @@ def get_fallback_news(error_message=None):
 
 @app.get("/api/news")
 def get_news():
-    """Get news from multiple sources with fallback."""
     global _news_cache, _news_cache_time
     
     try:
-        # Check cache
         if _news_cache and _news_cache_time:
             elapsed = (datetime.now(timezone.utc) - _news_cache_time).total_seconds()
             if elapsed < _news_cache_duration:
-                print(f"📰 Returning cached news ({elapsed:.1f}s old)")
                 return _news_cache
 
         results = {}
         success_count = 0
         
         for category, config in NEWS_CATEGORIES.items():
-            print(f"📰 Fetching {category} news from multiple sources...")
-            
             articles = fetch_news_from_multiple_sources(category, config)
             
             if articles:
@@ -2257,11 +1921,9 @@ def get_news():
             else:
                 fallback = get_fallback_news()
                 results[category] = fallback["articles"].get(category, [])
-                print(f"⚠️ Using fallback for {category}")
         
         has_results = any(len(articles) > 0 for articles in results.values())
         if not has_results:
-            print("⚠️ No results from any source, using fallback")
             return get_fallback_news("No news available")
         
         source_info = "Multiple Sources"
@@ -2279,11 +1941,10 @@ def get_news():
         }
         _news_cache_time = datetime.now(timezone.utc)
         
-        print(f"✅ News fetched: {success_count}/{len(NEWS_CATEGORIES)} categories updated")
         return _news_cache
         
     except Exception as e:
-        print(f"❌ News error: {e}")
+        log_error(f"News error: {e}")
         return get_fallback_news(str(e))
 
 # ============================================================
@@ -2305,7 +1966,6 @@ def get_weather_from_openweather():
         current_response = requests.get(current_url, params=current_params, timeout=10)
         
         if current_response.status_code != 200:
-            print(f"⚠️ OpenWeatherMap error: {current_response.status_code}")
             return None
         
         current_data = current_response.json()
@@ -2352,7 +2012,6 @@ def get_weather_from_openweather():
         }
         
     except Exception as e:
-        print(f"⚠️ OpenWeatherMap exception: {e}")
         return None
 
 def weather_icon_owm(code, is_day=True):
@@ -2385,13 +2044,11 @@ def get_weather():
         if _weather_cache and _weather_cache_time:
             elapsed = (datetime.now(timezone.utc) - _weather_cache_time).total_seconds()
             if elapsed < _weather_cache_duration:
-                print(f"🌤️ Returning cached weather ({elapsed:.1f}s old)")
                 return _weather_cache
         
         weather_data = get_weather_from_openweather()
         
         if not weather_data:
-            print("⚠️ OpenWeatherMap failed, using fallback")
             return get_weather_from_openmeteo()
         
         result = {
@@ -2416,7 +2073,6 @@ def get_weather():
         return result
         
     except Exception as e:
-        print(f"❌ Weather error: {e}")
         return get_weather_from_openmeteo()
 
 def get_weather_from_openmeteo():
@@ -2470,7 +2126,6 @@ def get_weather_from_openmeteo():
             "source": "Open-Meteo (Fallback)"
         }
     except Exception as e:
-        print(f"❌ Open-Meteo fallback error: {e}")
         return {
             "success": False,
             "error": str(e),
@@ -2490,187 +2145,6 @@ def get_weather_from_openmeteo():
         }
 
 # ============================================================
-# ATC
-# ============================================================
-
-def calculate_distance_km(lat1, lon1, lat2, lon2):
-    radius = 6371.0
-    lat1 = math.radians(lat1)
-    lon1 = math.radians(lon1)
-    lat2 = math.radians(lat2)
-    lon2 = math.radians(lon2)
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return radius * c
-
-def format_altitude(meters):
-    if meters is None:
-        return None
-    feet = meters * 3.28084
-    return round(feet)
-
-def format_speed(meters_per_second):
-    if meters_per_second is None:
-        return None
-    knots = meters_per_second * 1.943844
-    return round(knots)
-
-def format_heading(degrees):
-    if degrees is None:
-        return None
-    return round(degrees)
-
-@app.get("/api/atc")
-def get_atc():
-    global _atc_cache, _atc_cache_time, _atc_rate_limit_until
-    
-    try:
-        if _atc_rate_limit_until:
-            remaining = (_atc_rate_limit_until - datetime.now(timezone.utc)).total_seconds()
-            if remaining > 0:
-                print(f"⏳ Rate limit cooldown: {remaining:.0f}s remaining")
-                if _atc_cache:
-                    cached_response = _atc_cache.copy()
-                    cached_response["_stale"] = True
-                    cached_response["_stale_reason"] = f"Rate limit cooldown ({remaining:.0f}s)"
-                    cached_response["_cached"] = True
-                    return cached_response
-        
-        if _atc_cache and _atc_cache_time:
-            elapsed = (datetime.now(timezone.utc) - _atc_cache_time).total_seconds()
-            if elapsed < _atc_cache_duration:
-                print(f"📦 Returning cached ATC data ({elapsed:.1f}s old)")
-                cached_response = _atc_cache.copy()
-                cached_response["_cached"] = True
-                cached_response["_cache_age"] = round(elapsed, 1)
-                return cached_response
-
-        lamin = ATC_LAT - ATC_LAT_RADIUS
-        lamax = ATC_LAT + ATC_LAT_RADIUS
-        lomin = ATC_LON - ATC_LON_RADIUS
-        lomax = ATC_LON + ATC_LON_RADIUS
-
-        headers = tokens.headers()
-        if headers:
-            print("🔑 Using OpenSky OAuth2 authentication")
-        else:
-            print("🌐 Using unauthenticated OpenSky API")
-
-        response = requests.get(
-            "https://opensky-network.org/api/states/all",
-            params={"lamin": lamin, "lomin": lomin, "lamax": lamax, "lomax": lomax},
-            headers=headers,
-            timeout=15,
-        )
-
-        if response.status_code == 429:
-            print("🚫 OpenSky rate limit reached - waiting 2 minutes")
-            _atc_rate_limit_until = datetime.now(timezone.utc) + timedelta(seconds=120)
-            if _atc_cache:
-                stale_response = _atc_cache.copy()
-                stale_response["_stale"] = True
-                stale_response["_stale_reason"] = "Rate limit reached. Data may be stale."
-                return stale_response
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "success": False,
-                    "aircraft": [],
-                    "count": 0,
-                    "_rate_limited": True
-                }
-            )
-
-        _atc_rate_limit_until = None
-
-        if not response.ok:
-            raise Exception(f"OpenSky returned HTTP {response.status_code}")
-
-        data = response.json()
-        states = data.get('states')
-        
-        if states is None or len(states) == 0:
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "success": True,
-                    "aircraft": [],
-                    "count": 0,
-                    "total_available": 0,
-                    "updated": datetime.now(timezone.utc).isoformat(),
-                    "message": "No aircraft in your area right now"
-                }
-            )
-        
-        aircraft = []
-        for state in states:
-            if not state:
-                continue
-            try:
-                callsign_raw = state[1] if len(state) > 1 else None
-                callsign = callsign_raw.strip().upper() if callsign_raw else "N/A"
-                longitude = state[5] if len(state) > 5 and state[5] is not None else None
-                latitude = state[6] if len(state) > 6 and state[6] is not None else None
-                altitude = state[7] if len(state) > 7 and state[7] is not None else None
-                velocity = state[9] if len(state) > 9 and state[9] is not None else None
-                heading = state[10] if len(state) > 10 and state[10] is not None else None
-
-                if latitude is None or longitude is None:
-                    continue
-
-                distance = calculate_distance_km(ATC_LAT, ATC_LON, latitude, longitude)
-                if distance > 300:
-                    continue
-
-                aircraft.append({
-                    "callsign": callsign,
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "distance_km": round(distance, 1),
-                    "altitude_ft": format_altitude(altitude),
-                    "speed_kt": format_speed(velocity),
-                    "heading": format_heading(heading),
-                })
-            except Exception as e:
-                print(f"⚠️ Error processing state: {e}")
-                continue
-
-        aircraft.sort(key=lambda plane: plane["distance_km"])
-        aircraft = aircraft[:ATC_MAX_AIRCRAFT]
-
-        result = {
-            "success": True,
-            "aircraft": aircraft,
-            "count": len(aircraft),
-            "total_available": len(states),
-            "updated": datetime.now(timezone.utc).isoformat(),
-        }
-        
-        _atc_cache = result
-        _atc_cache_time = datetime.now(timezone.utc)
-        return result
-
-    except Exception as e:
-        print(f"❌ ATC error: {e}")
-        if _atc_cache:
-            stale_response = _atc_cache.copy()
-            stale_response["_stale"] = True
-            stale_response["_stale_reason"] = str(e)
-            return stale_response
-        return JSONResponse(
-            status_code=200,
-            content={
-                "success": True,
-                "aircraft": [],
-                "count": 0,
-                "total_available": 0,
-                "updated": datetime.now(timezone.utc).isoformat()
-            }
-        )
-
-# ============================================================
 # GROCERY LIST
 # ============================================================
 
@@ -2684,7 +2158,6 @@ def load_grocery_from_file():
                 return data.get("items", [])
         return []
     except Exception as e:
-        print(f"Error loading grocery: {e}")
         return []
 
 def save_grocery_to_file(items):
@@ -2693,7 +2166,6 @@ def save_grocery_to_file(items):
             json.dump({"items": items, "updated": datetime.now(timezone.utc).isoformat()}, f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving grocery: {e}")
         return False
 
 grocery_items = load_grocery_from_file()
@@ -2831,11 +2303,11 @@ def youtube_search(q: str):
             })
         return {"results": results}
     except Exception as e:
-        print("YouTube search error:", e)
+        log_error(f"YouTube search error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ============================================================
-# STARTUP - REGISTER mDNS (Optional - will fallback gracefully)
+# STARTUP - REGISTER mDNS
 # ============================================================
 
 mdns_zeroconf = None
@@ -2844,7 +2316,6 @@ def register_mdns():
     global mdns_zeroconf
     
     if not MDNS_AVAILABLE:
-        print("⚠️ Zeroconf not available - skipping mDNS registration")
         return None
     
     try:
@@ -2854,7 +2325,6 @@ def register_mdns():
         print("📡 Registering mDNS with Bonjour...")
         zeroconf = Zeroconf()
         
-        # Get primary IP address
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
@@ -2862,10 +2332,8 @@ def register_mdns():
             s.close()
             print(f"   Primary IP: {local_ip}")
         except Exception as e:
-            print(f"   ⚠️ Could not determine IP: {e}")
             local_ip = "127.0.0.1"
         
-        # Register service
         try:
             service_info = ServiceInfo(
                 "_http._tcp.local.",
@@ -2881,18 +2349,16 @@ def register_mdns():
             zeroconf.register_service(service_info)
             print(f"✅ mDNS registered: http://{local_ip}:8000")
             mdns_zeroconf = zeroconf
+            log_system(f"mDNS registered at {local_ip}:8000")
             return zeroconf
         except Exception as e:
             print(f"⚠️ Failed to register mDNS: {e}")
-            print("   💡 You can still access the dashboard via IP address")
             return None
         
     except Exception as e:
         print(f"❌ Failed to register mDNS: {e}")
-        print("   💡 Try using IP address instead")
         return None
 
-# Try to register mDNS, but don't worry if it fails
 try:
     mdns_zeroconf = register_mdns()
 except Exception as e:
@@ -2912,6 +2378,8 @@ def cleanup_mdns():
             print("✅ mDNS unregistered")
         except Exception as e:
             print(f"⚠️ Error unregistering mDNS: {e}")
+    
+    log_system("Smart Fridge Dashboard stopped")
 
 atexit.register(cleanup_mdns)
 
@@ -2921,7 +2389,6 @@ atexit.register(cleanup_mdns)
 
 @app.get("/api/audio/{filename}")
 def get_audio(filename: str):
-    """Serve custom audio files."""
     audio_path = BASE_DIR / "static" / filename
     if audio_path.exists():
         return FileResponse(
@@ -2937,7 +2404,7 @@ def get_audio(filename: str):
     )
 
 # ============================================================
-# MAIN - Compatible with both local and Render
+# MAIN
 # ============================================================
 
 if __name__ == "__main__":
@@ -2947,27 +2414,20 @@ if __name__ == "__main__":
     print("🏠 SMART FRIDGE DASHBOARD")
     print("="*50)
     
-    # Check if running on Render
-    is_render = os.environ.get("RENDER", "false").lower() == "true"
-    
-    if is_render:
-        print("\n📱 Deployed on Render")
-        print(f"   Service URL: https://{os.environ.get('RENDER_SERVICE_NAME', 'smartfridge-dashboard')}.onrender.com")
-    else:
-        # Get and display IP addresses for local development
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-            print(f"\n📱 Access the dashboard at:")
-            print(f"   → http://{local_ip}:8000")
-            print(f"   → http://localhost:8000")
-        except:
-            print("\n📱 Access the dashboard at: http://localhost:8000")
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        print(f"\n📱 Access the dashboard at:")
+        print(f"   → http://{local_ip}:8000")
+        print(f"   → http://localhost:8000")
+    except:
+        print("\n📱 Access the dashboard at: http://localhost:8000")
     
     print("\n" + "="*50)
     print("🚀 Starting server...\n")
     
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    log_system(f"Server started on port 8000", {"host": "0.0.0.0", "port": 8000})
+    
+    uvicorn.run(app, host="0.0.0.0", port=8000)

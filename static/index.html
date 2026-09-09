@@ -305,10 +305,7 @@ body {
     50% { border-color: rgba(74, 222, 128, 0.5); transform: scale(1.05); }
 }
 
-/* ============================================================
-   WASHING MACHINE VIBRATION ANIMATIONS
-   ============================================================ */
-
+/* Washing Machine Vibration */
 @keyframes washerVibrate {
     0% { transform: translate(0px, 0px) rotate(0deg); }
     10% { transform: translate(-2px, -1px) rotate(-2deg); }
@@ -1075,7 +1072,6 @@ body {
     display: inline-block;
 }
 
-/* Vibrating animations for washer icon */
 .washer-status .washer-icon.vibrating {
     animation: washerVibrate 1.2s ease-in-out infinite;
     display: inline-block;
@@ -2931,278 +2927,239 @@ body {
 
 
 /* ============================================================
-   ATC
+   SYSTEM ACTIVITY LOG (Replaces ATC)
    ============================================================ */
 
-.atc-card {
-    position: relative;
-}
-
-.atc-card h2 {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.atc-status {
-
-    font-size: 8px;
-
-    letter-spacing: .8px;
-
-    color: #fbbf24;
-
-    background: rgba(251,191,36,.08);
-
-    border:
-        1px solid rgba(251,191,36,.15);
-
-    border-radius: 8px;
-
-    padding: 3px 8px;
-    
-    transition: all 0.5s ease;
-    font-weight: 600;
-}
-
-.atc-status.live {
-
-    color: #4ade80;
-
-    background: rgba(74,222,128,.08);
-
-    border-color:
-        rgba(74,222,128,.2);
-        
-    animation: glowPulse 2s ease-in-out infinite;
-}
-
-.atc-status.error {
-
-    color: #f87171;
-
-    background: rgba(248,113,113,.08);
-
-    border-color:
-        rgba(248,113,113,.2);
-}
-
-.atc-header {
-
-    display: grid;
-
-    grid-template-columns:
-        1.4fr .8fr .9fr .6fr;
-
-    gap: 5px;
-
-    padding:
-        4px 8px;
-
-    color: rgba(107, 114, 128, 0.6);
-
-    font-size: 8px;
-
-    font-weight: 600;
-
-    letter-spacing: .8px;
-    text-transform: uppercase;
-}
-
-.atc-list {
-
-    flex: 1;
-
-    min-height: 0;
-
-    overflow-y: auto;
-
-    scrollbar-width: none;
-}
-
-.atc-list::-webkit-scrollbar {
-    display: none;
-}
-
-.atc-aircraft {
-
-    display: grid;
-
-    grid-template-columns:
-        1.4fr .8fr .9fr .6fr;
-
-    gap: 5px;
-
-    align-items: center;
-
-    background: rgba(26, 32, 43, 0.4);
-
-    padding: 8px 8px;
-
-    margin-bottom: 5px;
-
-    border-radius: 10px;
-
-    border:
-        1px solid rgba(37, 47, 64, 0.4);
-
-    font-family: 'Inter', monospace;
-
-    font-size:
-        clamp(9px, 1vw, 13px);
-
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    
-    animation: slideInRight 0.5s ease both;
-    animation-fill-mode: both;
-}
-
-.atc-aircraft:hover {
-
-    background: rgba(32, 41, 56, 0.6);
-
-    border-color: rgba(138, 180, 255, 0.15);
-    
-    transform: scale(1.02);
-}
-
-.atc-callsign {
-
-    color: white;
-
-    font-weight: 700;
-
+.log-card {
     overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
 }
 
-.atc-altitude {
-
-    color: rgba(138, 180, 255, 0.8);
-}
-
-.atc-speed {
-
-    color: rgba(156, 163, 175, 0.6);
-}
-
-.atc-heading {
-
-    color: rgba(156, 163, 175, 0.6);
-}
-
-.atc-footer {
-
+.log-controls {
     display: flex;
-
     justify-content: space-between;
-
-    flex-shrink: 0;
-
-    padding-top: 8px;
-
-    color: rgba(107, 114, 128, 0.6);
-
-    font-size: 9px;
-    font-weight: 500;
-}
-
-.atc-empty {
-
-    color: rgba(107, 114, 128, 0.6);
-
-    text-align: center;
-
-    padding: 25px 10px;
-
-    font-size: 11px;
-}
-
-/* ============================================================
-   ATC TOWER RADIO (SIMULATED)
-   ============================================================ */
-
-.atc-radio {
-    margin-top: 8px;
-    padding: 8px 12px;
-    background: rgba(13, 17, 23, 0.6);
-    border-radius: 12px;
-    border: 1px solid rgba(37, 44, 56, 0.4);
-    display: flex;
     align-items: center;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
     flex-shrink: 0;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    backdrop-filter: blur(10px);
 }
 
-.atc-radio:hover {
-    border-color: rgba(58, 69, 88, 0.4);
-}
-
-.atc-radio-status {
+.log-filters {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: clamp(8px, 0.8vw, 11px);
-    color: rgba(156, 163, 175, 0.6);
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
-.atc-radio-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    transition: all 0.4s ease;
-}
-
-.atc-radio-dot.offline {
-    background: rgba(107, 114, 128, 0.5);
-}
-
-.atc-radio-dot.connecting {
-    background: #fbbf24;
-    animation: pulse 1s ease-in-out infinite;
-}
-
-.atc-radio-dot.live {
-    background: #4ade80;
-    animation: glowPulse 2s ease-in-out infinite;
-}
-
-.atc-radio-btn {
-    background: rgba(26, 32, 43, 0.6);
+.log-filter-btn {
+    padding: 4px 10px;
     border: 1px solid rgba(48, 56, 70, 0.4);
-    color: rgba(156, 163, 175, 0.6);
     border-radius: 8px;
-    padding: 4px 12px;
-    font-size: clamp(8px, 0.7vw, 10px);
-    cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: rgba(26, 32, 43, 0.4);
+    color: rgba(156, 163, 175, 0.6);
+    font-size: 9px;
     font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
 }
 
-.atc-radio-btn:hover {
+.log-filter-btn:hover {
     border-color: rgba(138, 180, 255, 0.3);
     color: white;
     transform: scale(1.05);
 }
 
-.atc-radio-btn.active {
-    border-color: rgba(74, 222, 128, 0.3);
-    color: #4ade80;
-    background: rgba(74, 222, 128, 0.05);
-    animation: glowPulse 2s ease-in-out infinite;
+.log-filter-btn.active {
+    border-color: rgba(138, 180, 255, 0.4);
+    color: white;
+    background: rgba(138, 180, 255, 0.1);
 }
 
-.atc-radio-frequency {
-    color: rgba(107, 114, 128, 0.5);
-    font-size: clamp(7px, 0.6vw, 9px);
-    font-family: 'Inter', monospace;
-    letter-spacing: 0.5px;
+.log-actions {
+    display: flex;
+    gap: 4px;
 }
+
+.log-action-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(48, 56, 70, 0.4);
+    border-radius: 8px;
+    background: rgba(26, 32, 43, 0.4);
+    color: rgba(156, 163, 175, 0.6);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.log-action-btn:hover {
+    border-color: rgba(138, 180, 255, 0.3);
+    color: white;
+    transform: scale(1.05);
+}
+
+.log-action-btn.danger:hover {
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+.log-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.log-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: rgba(138, 180, 255, 0.2);
+    border-radius: 4px;
+}
+
+.log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    background: rgba(26, 32, 43, 0.3);
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.3s ease both;
+    font-size: clamp(10px, 0.9vw, 13px);
+}
+
+.log-entry:hover {
+    background: rgba(37, 47, 64, 0.5);
+}
+
+.log-entry .log-time {
+    font-size: clamp(8px, 0.6vw, 10px);
+    color: rgba(107, 114, 128, 0.5);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 500;
+    min-width: 60px;
+}
+
+.log-entry .log-icon {
+    font-size: clamp(12px, 1vw, 16px);
+    flex-shrink: 0;
+}
+
+.log-entry .log-message {
+    flex: 1;
+    color: rgba(156, 163, 175, 0.8);
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.log-entry .log-details {
+    font-size: clamp(8px, 0.6vw, 10px);
+    color: rgba(107, 114, 128, 0.5);
+    margin-top: 2px;
+}
+
+/* Log entry types */
+.log-entry.type-info {
+    border-left-color: #60a5fa;
+}
+
+.log-entry.type-success {
+    border-left-color: #4ade80;
+}
+
+.log-entry.type-warning {
+    border-left-color: #fbbf24;
+}
+
+.log-entry.type-error {
+    border-left-color: #f87171;
+}
+
+.log-entry.type-system {
+    border-left-color: #8b5cf6;
+}
+
+.log-entry.type-task {
+    border-left-color: #34d399;
+}
+
+.log-entry.type-washer {
+    border-left-color: #60a5fa;
+}
+
+.log-entry .log-badge {
+    font-size: 7px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.log-entry .log-badge.info {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.log-entry .log-badge.success {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+}
+
+.log-entry .log-badge.warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.log-entry .log-badge.error {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+}
+
+.log-entry .log-badge.system {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+}
+
+.log-entry .log-badge.task {
+    background: rgba(52, 211, 153, 0.15);
+    color: #34d399;
+}
+
+.log-entry .log-badge.washer {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.log-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+    font-size: 9px;
+    color: rgba(107, 114, 128, 0.5);
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.log-empty {
+    color: rgba(107, 114, 128, 0.5);
+    text-align: center;
+    padding: 30px 10px;
+    font-size: 12px;
+}
+
 
 /* ============================================================
    NEWS
@@ -3253,6 +3210,15 @@ body {
     color: white;
 }
 
+.news-title .news-link {
+    color: white;
+    text-decoration: none;
+}
+
+.news-title .news-link:hover {
+    color: #8ab4ff;
+}
+
 .news-description {
     color: rgba(156, 163, 175, 0.7);
     font-size: clamp(8px, 0.7vw, 10px);
@@ -3277,7 +3243,6 @@ body {
     flex-shrink: 0;
     font-weight: 500;
 }
-
 
 /* ============================================================
    MODAL
@@ -4188,65 +4153,54 @@ body {
 
 
 <!-- ============================================================
-     ATC
+     SYSTEM ACTIVITY LOG (Replaces ATC)
      ============================================================ -->
 
-<section class="card atc-card">
+<section class="card log-card">
 
-<h2>
-    ✈ LIVE ATC
-    <span id="atc-status" class="atc-status">CONNECTING</span>
-</h2>
+<h2>📋 ACTIVITY LOG</h2>
 
-<div class="atc-radio" id="atc-radio">
-    <div class="atc-radio-status">
-        <span class="atc-radio-dot offline" id="atc-radio-dot"></span>
-        <span id="atc-radio-label">ATC Tower Offline</span>
-        <span class="atc-radio-frequency" id="atc-radio-frequency">📻 118.10 MHz</span>
+<div class="log-controls">
+    <div class="log-filters">
+        <button class="log-filter-btn active" data-filter="all" onclick="filterLogs('all')">All</button>
+        <button class="log-filter-btn" data-filter="system" onclick="filterLogs('system')">🖥️ System</button>
+        <button class="log-filter-btn" data-filter="task" onclick="filterLogs('task')">📋 Tasks</button>
+        <button class="log-filter-btn" data-filter="washer" onclick="filterLogs('washer')">🧺 Washer</button>
+        <button class="log-filter-btn" data-filter="info" onclick="filterLogs('info')">ℹ️ Info</button>
+        <button class="log-filter-btn" data-filter="error" onclick="filterLogs('error')">❌ Errors</button>
     </div>
-    <button class="atc-radio-btn" id="atc-radio-btn" onclick="toggleATCRadio()">
-        🎙️ Listen
-    </button>
+    <div class="log-actions">
+        <button class="log-action-btn" onclick="refreshLogs()" title="Refresh logs">🔄</button>
+        <button class="log-action-btn danger" onclick="clearLogs()" title="Clear all logs">🗑️</button>
+    </div>
 </div>
 
-<div class="atc-header">
-
-    <span>CALLSIGN</span>
-    <span>ALT</span>
-    <span>SPEED</span>
-    <span>HDG</span>
-
+<div class="log-container" id="logContainer">
+    <div class="log-loading" style="color: rgba(107,114,128,0.6); text-align: center; padding: 30px;">
+        <span>Loading logs...</span>
+    </div>
 </div>
 
-<div
-    class="atc-list"
-    id="atc-list"
->
-    Loading aircraft...
-</div>
-
-<div class="atc-footer">
-
-    <span id="atc-count">
-        0 aircraft
-    </span>
-
-    <span>
-        ADS-B
-    </span>
-
+<div class="log-footer">
+    <span id="logCount">0 entries</span>
+    <span id="logUpdateTime">Updated just now</span>
 </div>
 
 </section>
 
 
 <!-- ============================================================
-     NEWS
+     NEWS (Fixed)
      ============================================================ -->
 
 <section class="card">
 
-<h2>📰 NEWS</h2>
+<h2 style="display: flex; justify-content: space-between; align-items: center;">
+    <span>📰 NEWS</span>
+    <button onclick="refreshNews()" style="background: transparent; border: none; color: rgba(107,114,128,0.5); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.3s ease;" title="Refresh news">
+        🔄
+    </button>
+</h2>
 
 <div id="news-container">
     <div class="news-item" style="text-align: center; color: rgba(107, 114, 128, 0.6);">
@@ -4658,7 +4612,6 @@ async function loadWasherStatus() {
     const text = document.getElementById('washerStatusText');
     const dot = document.getElementById('washerDot');
     
-    // Add loading state
     statusEl.classList.add('loading');
     
     try {
@@ -4672,7 +4625,6 @@ async function loadWasherStatus() {
                 icon.textContent = '🔌';
                 text.textContent = 'Not Connected';
                 dot.className = 'washer-dot idle';
-                // Remove vibration class if present
                 icon.classList.remove('vibrating', 'vibrating-fast');
                 return;
             }
@@ -4690,23 +4642,17 @@ async function loadWasherStatus() {
             text.textContent = status.display || 'Unknown';
             dot.className = `washer-dot ${status.status || 'idle'}`;
             
-            // Add vibration animation when running
             icon.classList.remove('vibrating', 'vibrating-fast');
             if (status.status === 'running') {
-                // Add vibration with different speeds based on progress
                 if (status.progress && status.progress > 50) {
-                    // Fast vibration when more than 50% done (spin cycle)
                     icon.classList.add('vibrating-fast');
                 } else {
-                    // Normal vibration during wash
                     icon.classList.add('vibrating');
                 }
             }
             
-            // Store data for tooltip
             washerData = status;
             
-            // Update tooltip if open
             if (washerTooltipOpen) {
                 updateWasherTooltip();
             }
@@ -4773,7 +4719,6 @@ function updateWasherTooltip() {
         <span class="value">${washerData.cycle_icon} ${washerData.cycle}</span>
     `;
     
-    // Show progress if available
     if (washerData.progress !== undefined && washerData.progress > 0) {
         progressRow.innerHTML = `
             <span class="label">Progress</span>
@@ -4784,7 +4729,6 @@ function updateWasherTooltip() {
         progressRow.style.display = 'none';
     }
     
-    // Show remaining time if available
     if (washerData.remaining_time && washerData.remaining_time > 0) {
         const minutes = Math.round(washerData.remaining_time);
         timeRow.innerHTML = `
@@ -4802,7 +4746,6 @@ function updateWasherTooltip() {
     `;
 }
 
-// Add tooltip HTML dynamically
 function createWasherTooltip() {
     const tooltipHTML = `
         <div class="washer-overlay" id="washerOverlay" onclick="closeWasherTooltip()"></div>
@@ -4834,19 +4777,16 @@ function createWasherTooltip() {
     document.body.insertAdjacentHTML('beforeend', tooltipHTML);
 }
 
-// Close tooltip with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && washerTooltipOpen) {
         closeWasherTooltip();
     }
 });
 
-// Initialize washer status
 document.addEventListener('DOMContentLoaded', function() {
     createWasherTooltip();
     loadWasherStatus();
     
-    // Update every 30 seconds
     if (washerInterval) {
         clearInterval(washerInterval);
     }
@@ -4872,7 +4812,6 @@ const GREETINGS = {
         ],
         timeRange: [5, 11],
         color: 'morning',
-        // Only speak at 6 AM (hour: 6, minute: 0)
         speakHour: 6,
         speakMinute: 0
     },
@@ -4926,8 +4865,7 @@ const GREETINGS = {
     }
 };
 
-let lastGreetingKey = '';
-let lastSpokenDate = '';  // Track the date to prevent multiple speaks
+let lastSpokenDate = '';
 
 function getCurrentGreeting() {
     const hour = new Date().getHours();
@@ -4956,7 +4894,6 @@ function speakGreeting() {
     const message = `${greetingText} ${metaText}`;
     
     if (!('speechSynthesis' in window)) {
-        console.log('Speech synthesis not supported');
         return;
     }
     
@@ -4990,7 +4927,6 @@ function speakGreeting() {
         container.classList.remove('speaking');
         speaker.classList.remove('speaking');
         speaker.textContent = '🔊';
-        console.log('Speech error');
     };
     
     window.speechSynthesis.speak(utterance);
@@ -5004,7 +4940,6 @@ function updateGreeting() {
     const meta = document.getElementById('greetingMeta');
     const speaker = document.getElementById('greetingSpeaker');
     
-    // Update the display
     emoji.textContent = greeting.emoji;
     text.textContent = greeting.text;
     
@@ -5013,32 +4948,24 @@ function updateGreeting() {
     
     container.className = 'greeting-container';
     
-    // Check if we should speak this greeting
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const todayDate = now.toDateString();
     
-    // Only speak if:
-    // 1. The greeting has a speakHour and speakMinute defined
-    // 2. It's exactly that hour and minute
-    // 3. We haven't spoken today already
     if (greeting.speakHour !== undefined && 
         greeting.speakMinute !== undefined &&
         currentHour === greeting.speakHour && 
         currentMinute === greeting.speakMinute &&
         lastSpokenDate !== todayDate) {
         
-        // Mark as spoken for today
         lastSpokenDate = todayDate;
         
-        // Speak the greeting
         setTimeout(() => speakGreeting(), 1000);
         console.log(`🔊 Spoke greeting at ${currentHour}:${String(currentMinute).padStart(2, '0')}`);
     }
 }
 
-// Initialize
 if ('speechSynthesis' in window) {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => {
@@ -5046,32 +4973,24 @@ if ('speechSynthesis' in window) {
     };
 }
 
-// Update greeting on page load
 updateGreeting();
 
-// Check every 30 seconds for greeting changes and speech timing
 setInterval(() => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    const todayDate = now.toDateString();
     
-    // Get the current greeting
     const greeting = getCurrentGreeting();
     
-    // Only check speech timing at the start of each minute
     if (currentMinute === greeting.speakMinute) {
-        // Update the greeting display
         updateGreeting();
     }
     
-    // Also update display on hour change
     if (currentMinute === 0) {
         updateGreeting();
     }
-}, 10000);  // Check every 10 seconds
+}, 10000);
 
-// Also update the meta text every 30 seconds (visual only, no speech)
 setInterval(() => {
     const greeting = getCurrentGreeting();
     const meta = document.getElementById('greetingMeta');
@@ -5081,7 +5000,7 @@ setInterval(() => {
 
 
 /* ============================================================
-   CUSTOM AUDIO SYSTEM - Plays once at 6 AM only
+   CUSTOM AUDIO SYSTEM
    ============================================================ */
 
 const AUDIO_CONFIG = {
@@ -5101,7 +5020,6 @@ function playMorningAudio() {
     const config = AUDIO_CONFIG.morning;
     
     if (!config || !config.enabled) {
-        console.log('🔇 Morning audio disabled');
         return;
     }
     
@@ -5110,19 +5028,16 @@ function playMorningAudio() {
     const currentMinute = now.getMinutes();
     
     if (currentHour !== config.playHour) {
-        console.log(`⏰ Not 6 AM yet (current hour: ${currentHour})`);
         return;
     }
     
     if (currentMinute > config.minuteWindow) {
-        console.log(`⏰ Past 6 AM window (${currentMinute} minutes past)`);
         return;
     }
     
     const today = new Date().toDateString();
     const cacheKey = `morning_audio_${today}`;
     if (localStorage.getItem(cacheKey) === 'played') {
-        console.log('🔊 Morning audio already played today');
         return;
     }
     
@@ -5245,13 +5160,6 @@ function resetAudioTracking() {
 resetAudioTracking();
 setInterval(resetAudioTracking, 60000);
 
-function testMorningAudio() {
-    console.log('🔊 Testing morning audio manually...');
-    const config = AUDIO_CONFIG.morning;
-    playAudioFile(config.file, config.volume, () => {
-        console.log('✅ Test audio played!');
-    });
-}
 
 /* ============================================================
    ENTERTAINMENT - SWIPABLE PAGES
@@ -5486,7 +5394,7 @@ function updateMemberButtons() {
 
 
 /* ============================================================
-   TASKS - WITH SOURCE INDICATOR
+   TASKS
    ============================================================ */
 
 function renderTasksSourceIndicator(data) {
@@ -5604,7 +5512,6 @@ document.getElementById("add-task-form").addEventListener("submit", async event 
         input.value = "";
         await loadTasks();
         
-        // Show status briefly
         if (data.fallback) {
             const statusMsg = document.createElement('div');
             statusMsg.style.cssText = `
@@ -5764,7 +5671,7 @@ document.getElementById("add-grocery-form").addEventListener("submit", async eve
 
 
 /* ============================================================
-   CALENDAR - WITH SOURCE INDICATOR
+   CALENDAR
    ============================================================ */
 
 function renderCalendarSourceIndicator(data) {
@@ -5811,26 +5718,22 @@ function renderCalendarSourceIndicator(data) {
     }
 }
 
-// Calendar page navigation
 function setCalendarPage(page) {
     calendarPage = Math.max(0, Math.min(1, page));
     const track = document.getElementById('calendar-track');
     track.style.transform = `translateX(-${calendarPage * 50}%)`;
     
-    // Update dots
     document.querySelectorAll('.calendar-dot').forEach((dot, index) => {
         dot.classList.toggle('active', index === calendarPage);
     });
 }
 
-// Make functions globally accessible
 window.setCalendarPage = setCalendarPage;
 window.changeMonth = changeMonth;
 window.deletePastEvents = deletePastEvents;
 window.openEventModal = openEventModal;
 window.closeEventModal = closeEventModal;
 
-// Calendar Swipe Support
 let calendarTouchStartX = 0;
 let calendarTouchStartY = 0;
 let calendarTouchStartTime = 0;
@@ -5851,7 +5754,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const diffY = calendarTouchStartY - endY;
             const elapsed = Date.now() - calendarTouchStartTime;
             
-            // Only handle horizontal swipes, minimum 40px, faster than 500ms
             if (Math.abs(diffX) < 40 || Math.abs(diffX) < Math.abs(diffY) || elapsed > 500) return;
             
             if (diffX > 0 && calendarPage < 1) {
@@ -6251,236 +6153,7 @@ async function loadWeather() {
 
 
 /* ============================================================
-   LIVE ATC
-   ============================================================ */
-
-const ATC_UPDATE_INTERVAL = 60000;
-
-async function loadATC() {
-    const list = document.getElementById("atc-list");
-    const status = document.getElementById("atc-status");
-    const count = document.getElementById("atc-count");
-    try {
-        status.textContent = "UPDATING";
-        status.classList.remove("live", "error");
-        const response = await fetch("/api/atc", { cache: "no-store" });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `ATC API ${response.status}`);
-        }
-        const data = await response.json();
-        if (!data.success) {
-            if (data._rate_limited) {
-                status.textContent = "RATE LIMITED";
-                status.classList.add("error");
-                status.style.color = "#fbbf24";
-                count.textContent = "Please wait...";
-                list.innerHTML = `<div class="atc-empty">⏳ OpenSky rate limit reached.<br>Auto-retry in 2 minutes...</div>`;
-                setTimeout(loadATC, 120000);
-                return;
-            }
-            throw new Error(data.error || "ATC data unavailable");
-        }
-        const aircraft = data.aircraft || [];
-        renderATC(aircraft);
-        if (data._stale) {
-            status.textContent = "STALE";
-            status.style.color = "#fbbf24";
-            status.classList.remove("live", "error");
-            count.textContent = `${data.count || aircraft.length} aircraft (cached)`;
-        } else if (data._cached) {
-            status.textContent = `CACHED (${data._cache_age}s)`;
-            status.style.color = "#60a5fa";
-            status.classList.remove("live", "error");
-            count.textContent = `${data.count || aircraft.length} aircraft`;
-        } else {
-            status.textContent = "LIVE";
-            status.classList.add("live");
-            status.style.color = "";
-            count.textContent = `${data.count || aircraft.length} aircraft`;
-        }
-    } catch (error) {
-        console.error("ATC:", error);
-        status.textContent = "OFFLINE";
-        status.classList.add("error");
-        status.style.color = "";
-        count.textContent = "No connection";
-        list.innerHTML = `<div class="atc-empty">⚠️ Live ATC unavailable</div>`;
-    }
-}
-
-function renderATC(aircraft) {
-    const container = document.getElementById("atc-list");
-    container.innerHTML = "";
-    if (!aircraft || !aircraft.length) {
-        container.innerHTML = `<div class="atc-empty">No aircraft detected nearby</div>`;
-        return;
-    }
-    aircraft.forEach((plane, index) => {
-        const item = document.createElement("div");
-        item.className = "atc-aircraft";
-        item.style.animationDelay = `${index * 0.05}s`;
-        const callsign = document.createElement("div");
-        callsign.className = "atc-callsign";
-        callsign.textContent = plane.callsign || "UNKNOWN";
-        const altitude = document.createElement("div");
-        altitude.className = "atc-altitude";
-        altitude.textContent = plane.altitude_ft ? `FL${String(Math.round(plane.altitude_ft / 100)).padStart(3, "0")}` : "--";
-        const speed = document.createElement("div");
-        speed.className = "atc-speed";
-        speed.textContent = plane.speed_kt ? `${plane.speed_kt}kt` : "--";
-        const heading = document.createElement("div");
-        heading.className = "atc-heading";
-        heading.textContent = plane.heading ? `${String(plane.heading).padStart(3, "0")}°` : "---";
-        item.appendChild(callsign);
-        item.appendChild(altitude);
-        item.appendChild(speed);
-        item.appendChild(heading);
-        item.onclick = () => { window.open(`https://opensky-network.org/`, "_blank"); };
-        container.appendChild(item);
-    });
-}
-
-
-/* ============================================================
-   ATC RADIO (SIMULATED)
-   ============================================================ */
-
-let atcRadioPlaying = false;
-let atcRadioInterval = null;
-let atcNoiseContext = null;
-let atcNoiseNode = null;
-let atcGainNode = null;
-
-const ATC_PHRASES = [
-    { text: "🔊 'Boeing 737, you are cleared for takeoff, runway 27.'", delay: 4000 },
-    { text: "🔊 'Airbus A320, descend to 5000 feet, QNH 1013.'", delay: 5000 },
-    { text: "🔊 'Cessna 172, enter left downwind, runway 27.'", delay: 4500 },
-    { text: "🔊 'Embraer 190, contact departure on 118.50.'", delay: 3500 },
-    { text: "🔊 'Boeing 777, turn right heading 270, maintain 3000 feet.'", delay: 6000 },
-    { text: "🔊 'Airbus A380, cleared to land, runway 27L.'", delay: 5500 },
-    { text: "🔊 'Gulfstream G650, taxi to gate Alpha 5.'", delay: 4000 },
-    { text: "🔊 'Bombardier CRJ, line up and wait.'", delay: 3000 },
-    { text: "🔊 'Boeing 737, climb to 15000 feet, FL180.'", delay: 4500 },
-    { text: "🔊 'Airbus A330, slow to 210 knots.'", delay: 5000 },
-    { text: "🔊 'Cessna Citation, hold short of runway 27R.'", delay: 3500 },
-    { text: "🔊 'Boeing 787, cleared for takeoff, runway 27.'", delay: 4000 },
-    { text: "🔊 'Embraer 175, descend to 3000 feet, QNH 1015.'", delay: 5500 },
-    { text: "🔊 'Airbus A350, contact tower on 118.10.'", delay: 3000 },
-    { text: "🔊 'Boeing 747, go around, repeat go around.'", delay: 4500 },
-    { text: "🔊 'Airbus A319, cleared to land, runway 27L.'", delay: 5000 },
-    { text: "🔊 'Dassault Falcon, maintain 250 knots.'", delay: 4000 },
-    { text: "🔊 'Boeing 767, turn left heading 180, descent to 5000 feet.'", delay: 6000 },
-];
-
-function toggleATCRadio() {
-    if (!atcRadioPlaying) {
-        startATCRadio();
-    } else {
-        stopATCRadio();
-    }
-}
-
-function startATCRadio() {
-    const btn = document.getElementById('atc-radio-btn');
-    const dot = document.getElementById('atc-radio-dot');
-    const label = document.getElementById('atc-radio-label');
-    const freq = document.getElementById('atc-radio-frequency');
-    try {
-        atcNoiseContext = new (window.AudioContext || window.webkitAudioContext)();
-        atcNoiseNode = atcNoiseContext.createBufferSource();
-        atcGainNode = atcNoiseContext.createGain();
-        const bufferSize = atcNoiseContext.sampleRate * 0.5;
-        const buffer = atcNoiseContext.createBuffer(1, bufferSize, atcNoiseContext.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * 0.15;
-        }
-        atcNoiseNode.buffer = buffer;
-        atcNoiseNode.loop = true;
-        atcNoiseNode.connect(atcGainNode);
-        atcGainNode.connect(atcNoiseContext.destination);
-        atcGainNode.gain.value = 0.03;
-        atcNoiseNode.start(0);
-        atcRadioPlaying = true;
-        btn.textContent = '🔊 Stop ATC';
-        btn.className = 'atc-radio-btn active';
-        dot.className = 'atc-radio-dot live';
-        label.textContent = '🎙️ ATC Tower Live (Simulated)';
-        freq.textContent = '📻 118.10 MHz';
-        btn.disabled = false;
-        playNextATCPhrase();
-        console.log('✅ ATC Radio started (simulated)');
-    } catch (error) {
-        console.error('Error starting ATC radio:', error);
-        btn.textContent = '🎙️ Audio Unavailable';
-        btn.className = 'atc-radio-btn';
-        dot.className = 'atc-radio-dot offline';
-        label.textContent = '⚠️ Audio Error - Click Retry';
-        btn.disabled = false;
-        atcRadioPlaying = false;
-    }
-}
-
-function playNextATCPhrase() {
-    if (!atcRadioPlaying) return;
-    const label = document.getElementById('atc-radio-label');
-    const phrase = ATC_PHRASES[Math.floor(Math.random() * ATC_PHRASES.length)];
-    if (atcGainNode) {
-        atcGainNode.gain.value = 0.08;
-        setTimeout(() => { if (atcGainNode) atcGainNode.gain.value = 0.03; }, 500);
-    }
-    label.textContent = phrase.text;
-    label.style.color = '#4ade80';
-    const delay = phrase.delay + (Math.random() * 2000);
-    atcRadioInterval = setTimeout(() => { playNextATCPhrase(); }, delay);
-    if (Math.random() > 0.7) {
-        label.textContent = '🔊 ' + ['Static...', 'Interference...', 'Break...', 'Over...'][Math.floor(Math.random() * 4)];
-        label.style.color = '#fbbf24';
-    } else {
-        label.style.color = '#4ade80';
-    }
-}
-
-function stopATCRadio() {
-    const btn = document.getElementById('atc-radio-btn');
-    const dot = document.getElementById('atc-radio-dot');
-    const label = document.getElementById('atc-radio-label');
-    const freq = document.getElementById('atc-radio-frequency');
-    try {
-        if (atcRadioInterval) {
-            clearTimeout(atcRadioInterval);
-            atcRadioInterval = null;
-        }
-        if (atcNoiseNode) {
-            try { atcNoiseNode.stop(); } catch (e) {}
-            atcNoiseNode = null;
-        }
-        if (atcNoiseContext && atcNoiseContext.state !== 'closed') {
-            try { atcNoiseContext.close(); } catch (e) {}
-            atcNoiseContext = null;
-        }
-        atcGainNode = null;
-    } catch (error) {
-        console.error('Error stopping ATC radio:', error);
-    }
-    atcRadioPlaying = false;
-    btn.textContent = '🎙️ Listen';
-    btn.className = 'atc-radio-btn';
-    dot.className = 'atc-radio-dot offline';
-    label.textContent = 'ATC Tower Offline';
-    label.style.color = '#6b7280';
-    freq.textContent = '📻 118.10 MHz';
-    console.log('🔇 ATC Radio stopped');
-}
-
-window.addEventListener('beforeunload', () => {
-    if (atcRadioPlaying) { stopATCRadio(); }
-});
-
-
-/* ============================================================
-   NEWS
+   NEWS (Fixed)
    ============================================================ */
 
 async function loadNews() {
@@ -6489,14 +6162,12 @@ async function loadNews() {
         container.innerHTML = `<div class="news-item" style="text-align: center; color: rgba(107, 114, 128, 0.6);"><span class="news-source">📡 Loading...</span>Fetching latest news...</div>`;
         const response = await fetch("/api/news");
         const data = await response.json();
-        console.log("News data received:", data);
+        
         if (!data.success) {
-            console.warn("News API returned error, using fallback");
             renderNews(data.articles || getFallbackNews());
             return;
         }
         if (!data.articles || Object.keys(data.articles).length === 0) {
-            console.warn("No news articles found");
             renderNews(getFallbackNews());
             return;
         }
@@ -6510,8 +6181,9 @@ async function loadNews() {
 function renderNews(data) {
     const container = document.getElementById("news-container");
     container.innerHTML = "";
-    console.log("Rendering news data:", data);
+    
     const articles = data.articles || data;
+    
     if (data.source) {
         const sourceInfo = document.createElement("div");
         sourceInfo.className = "news-source-info";
@@ -6519,58 +6191,102 @@ function renderNews(data) {
         sourceInfo.textContent = `📰 ${data.source}${updatedText}`;
         container.appendChild(sourceInfo);
     }
+    
     const categoryStyles = {
         "india": { label: "🇮🇳 INDIA" },
         "world": { label: "🌍 WORLD" },
         "technology": { label: "💻 TECHNOLOGY" },
         "aviation": { label: "✈️ AVIATION" }
     };
+    
     let hasArticles = false;
     let categoryIndex = 0;
+    
     for (const category in articles) {
         if (articles[category] && articles[category].length > 0) {
             hasArticles = true;
             break;
         }
     }
+    
     if (!hasArticles) {
         container.innerHTML = `<div class="news-empty">📭 No news available<br><small>Check back later for updates</small></div>`;
         return;
     }
+    
     for (const [category, newsItems] of Object.entries(articles)) {
         if (!newsItems || !newsItems.length) continue;
+        
+        // Show only the first item from each category
         const item = newsItems[0];
-        if (!item || !item.title) continue;
+        if (!item || !item.title || item.title.length < 3) continue;
+        
         const div = document.createElement("div");
         div.className = "news-item";
         div.style.animationDelay = `${categoryIndex * 0.05}s`;
+        
         const source = document.createElement("span");
         source.className = "news-source";
         const categoryStyle = categoryStyles[category] || { label: category.toUpperCase() };
         const sourceName = item.source?.name || "News";
         const published = item.published ? ` • ${item.published}` : '';
         source.textContent = `${categoryStyle.label} • ${sourceName}${published}`;
+        
         const title = document.createElement("div");
         title.className = "news-title";
-        title.textContent = item.title;
+        let cleanTitle = item.title;
+        // Remove any remaining HTML tags
+        cleanTitle = cleanTitle.replace(/<[^>]+>/g, '').trim();
+        // Remove any weird characters
+        cleanTitle = cleanTitle.replace(/[^\w\s\.\,\!\?\-\'\"\(\)]/g, '').trim();
+        if (cleanTitle.length > 80) {
+            cleanTitle = cleanTitle.substring(0, 77) + '...';
+        }
+        title.textContent = cleanTitle;
+        
         if (item.url && item.url !== "#") {
             title.style.cursor = "pointer";
             div.style.cursor = "pointer";
             div.onclick = () => { window.open(item.url, "_blank"); };
         }
-        if (item.description && item.description !== "Read more at Google News") {
+        
+        // Show description if it's clean and not empty
+        if (item.description && item.description !== "Read more at the source" && item.description.length > 5) {
             const desc = document.createElement("div");
             desc.className = "news-description";
             let descText = item.description;
-            if (descText.length > 120) { descText = descText.substring(0, 117) + '...'; }
+            // Clean description
+            descText = descText.replace(/<[^>]+>/g, '').trim();
+            descText = descText.replace(/[^\w\s\.\,\!\?\-\'\"\(\)]/g, '').trim();
+            if (descText.length > 120) {
+                descText = descText.substring(0, 117) + '...';
+            }
             desc.textContent = descText;
             div.appendChild(desc);
         }
+        
         div.appendChild(source);
         div.appendChild(title);
         container.appendChild(div);
         categoryIndex++;
     }
+}
+
+async function refreshNews() {
+    const refreshBtn = document.querySelector('.card h2 button');
+    if (!refreshBtn) return;
+    
+    refreshBtn.textContent = '⏳';
+    refreshBtn.disabled = true;
+    
+    try {
+        await loadNews();
+    } catch (error) {
+        console.error("News refresh error:", error);
+    }
+    
+    refreshBtn.textContent = '🔄';
+    refreshBtn.disabled = false;
 }
 
 function getFallbackNews() {
@@ -6584,6 +6300,145 @@ function getFallbackNews() {
         }]
     };
 }
+
+
+/* ============================================================
+   SYSTEM ACTIVITY LOG
+   ============================================================ */
+
+let currentLogFilter = 'all';
+let logRefreshInterval = null;
+
+async function loadLogs() {
+    const container = document.getElementById('logContainer');
+    
+    try {
+        const url = currentLogFilter === 'all' 
+            ? '/api/logs?limit=100'
+            : `/api/logs?limit=100&type_filter=${currentLogFilter}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (!data.logs || data.logs.length === 0) {
+            container.innerHTML = `
+                <div class="log-empty">
+                    📭 No logs yet<br>
+                    <small>Activity will appear here as it happens</small>
+                </div>
+            `;
+            document.getElementById('logCount').textContent = '0 entries';
+            return;
+        }
+        
+        renderLogs(data.logs);
+        document.getElementById('logCount').textContent = `${data.total} entries`;
+        
+        const now = new Date();
+        document.getElementById('logUpdateTime').textContent = `🔄 Updated ${now.toLocaleTimeString()}`;
+        
+    } catch (error) {
+        console.error('Logs error:', error);
+        container.innerHTML = `
+            <div class="log-empty" style="color: #f87171;">
+                ⚠️ Could not load logs<br>
+                <small>${error.message}</small>
+            </div>
+        `;
+    }
+}
+
+function renderLogs(logs) {
+    const container = document.getElementById('logContainer');
+    container.innerHTML = '';
+    
+    const typeIcons = {
+        'info': 'ℹ️',
+        'success': '✅',
+        'warning': '⚠️',
+        'error': '❌',
+        'system': '🖥️',
+        'task': '📋',
+        'washer': '🧺'
+    };
+    
+    logs.forEach((log, index) => {
+        const entry = document.createElement('div');
+        entry.className = `log-entry type-${log.type}`;
+        entry.style.animationDelay = `${index * 0.03}s`;
+        
+        const time = new Date(log.timestamp);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const icon = typeIcons[log.type] || '📌';
+        
+        let messageHtml = log.message;
+        if (log.details && Object.keys(log.details).length > 0) {
+            const detailsStr = Object.entries(log.details)
+                .map(([key, val]) => `${key}: ${val}`)
+                .join(' • ');
+            messageHtml += `<div class="log-details">${detailsStr}</div>`;
+        }
+        
+        entry.innerHTML = `
+            <span class="log-time">${timeStr}</span>
+            <span class="log-icon">${icon}</span>
+            <div class="log-message">${messageHtml}</div>
+            <span class="log-badge ${log.type}">${log.type}</span>
+        `;
+        
+        container.appendChild(entry);
+    });
+}
+
+function filterLogs(filter) {
+    currentLogFilter = filter;
+    
+    document.querySelectorAll('.log-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    
+    loadLogs();
+}
+
+async function refreshLogs() {
+    const btn = document.querySelector('.log-action-btn:first-child');
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    
+    await loadLogs();
+    
+    btn.textContent = '🔄';
+    btn.disabled = false;
+}
+
+async function clearLogs() {
+    if (!confirm('Are you sure you want to clear all logs?')) return;
+    
+    try {
+        const response = await fetch('/api/logs', { method: 'DELETE' });
+        if (response.ok) {
+            await loadLogs();
+        }
+    } catch (error) {
+        console.error('Clear logs error:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadLogs();
+    
+    if (logRefreshInterval) {
+        clearInterval(logRefreshInterval);
+    }
+    logRefreshInterval = setInterval(loadLogs, 30000);
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        loadLogs();
+    }
+});
 
 
 /* ============================================================
@@ -6609,7 +6464,6 @@ function updateModeUI(mode) {
     const status = document.getElementById('modeStatus');
     const toggle = document.getElementById('modeToggle');
     
-    // Update icon and status
     if (mode === 'auto') {
         icon.textContent = '🔄';
         status.textContent = 'Auto';
@@ -6627,7 +6481,6 @@ function updateModeUI(mode) {
         toggle.style.borderColor = 'rgba(248, 113, 113, 0.2)';
     }
     
-    // Update dropdown items
     document.querySelectorAll('.mode-dropdown-item').forEach(item => {
         item.classList.toggle('active', item.dataset.mode === mode);
     });
@@ -6646,7 +6499,6 @@ function openModeDropdown() {
     dropdown.classList.add('open');
     modeDropdownOpen = true;
     
-    // Close dropdown when clicking outside
     setTimeout(() => {
         document.addEventListener('click', closeModeDropdownOutside);
     }, 100);
@@ -6685,7 +6537,6 @@ async function setMode(mode) {
             currentMode = mode;
             updateModeUI(mode);
             
-            // Show status message
             const statusMsg = document.createElement('div');
             statusMsg.style.cssText = `
                 position: fixed;
@@ -6712,7 +6563,6 @@ async function setMode(mode) {
             statusMsg.textContent = `✅ Mode switched to: ${modeNames[mode] || mode}`;
             document.body.appendChild(statusMsg);
             
-            // Reload data to reflect the new mode
             await loadTasks();
             await loadCalendar();
             
@@ -6728,7 +6578,6 @@ async function setMode(mode) {
     toggle.classList.remove('sync');
 }
 
-// Add dropdown to HTML dynamically
 function createModeDropdown() {
     const toggle = document.getElementById('modeToggle');
     const dropdown = document.createElement('div');
@@ -6755,18 +6604,14 @@ function createModeDropdown() {
     toggle.appendChild(dropdown);
 }
 
-// Initialize mode on load
 document.addEventListener('DOMContentLoaded', function() {
-    // Create mode dropdown
     createModeDropdown();
-    
-    // Load current mode
     loadMode();
 });
 
 
 /* ============================================================
-   GOOGLE API STATUS CHECKER - AUTO SWITCH BETWEEN GOOGLE/LOCAL
+   GOOGLE API STATUS CHECKER
    ============================================================ */
 
 let googleStatus = {
@@ -6774,7 +6619,6 @@ let googleStatus = {
     calendar: { available: false, checking: false }
 };
 
-// Check Google API status periodically
 async function checkGoogleStatus() {
     try {
         const response = await fetch("/api/status/google");
@@ -6783,14 +6627,11 @@ async function checkGoogleStatus() {
         const tasksAvailable = data.tasks?.available || false;
         const calendarAvailable = data.calendar?.available || false;
         
-        // Update status
         googleStatus.tasks.available = tasksAvailable;
         googleStatus.calendar.available = calendarAvailable;
         
-        // Update UI indicators
         updateGoogleStatusUI(tasksAvailable, calendarAvailable);
         
-        // If Google becomes available, reload data from Google
         if (tasksAvailable) {
             console.log("✅ Google Tasks API is back online!");
             await loadTasks();
@@ -6807,7 +6648,6 @@ async function checkGoogleStatus() {
 }
 
 function updateGoogleStatusUI(tasksAvailable, calendarAvailable) {
-    // Update tasks tab indicator
     const tasksTab = document.querySelector('.tasks-tab[data-tab="todo"]');
     if (tasksTab) {
         if (!tasksAvailable) {
@@ -6821,7 +6661,6 @@ function updateGoogleStatusUI(tasksAvailable, calendarAvailable) {
         }
     }
     
-    // Update calendar indicator
     const calendarTitle = document.querySelector('.calendar-card h2');
     if (calendarTitle) {
         if (!calendarAvailable) {
@@ -6840,10 +6679,8 @@ function updateGoogleStatusUI(tasksAvailable, calendarAvailable) {
     }
 }
 
-// Check Google status every 30 seconds
 setInterval(checkGoogleStatus, 30000);
 
-// Check on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(checkGoogleStatus, 2000);
 });
@@ -6860,7 +6697,6 @@ async function syncLocalData() {
     }
     
     try {
-        // Sync tasks if Google is available
         if (googleStatus.tasks.available) {
             const tasksResponse = await fetch("/api/sync/tasks", { method: "POST" });
             const tasksData = await tasksResponse.json();
@@ -6869,7 +6705,6 @@ async function syncLocalData() {
             }
         }
         
-        // Sync calendar if Google is available
         if (googleStatus.calendar.available) {
             const calResponse = await fetch("/api/sync/calendar", { method: "POST" });
             const calData = await calResponse.json();
@@ -6882,10 +6717,8 @@ async function syncLocalData() {
     }
 }
 
-// Auto-sync every 2 minutes when Google is available
 setInterval(syncLocalData, 120000);
 
-// Also sync when Google comes back online
 setInterval(() => {
     if (googleStatus.tasks.available || googleStatus.calendar.available) {
         syncLocalData();
@@ -7041,7 +6874,6 @@ function closeScheduledModal() {
     document.getElementById('scheduled-modal').classList.remove('open');
 }
 
-// Handle scheduled form submission
 document.getElementById('scheduled-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -7077,7 +6909,6 @@ document.getElementById('scheduled-form').addEventListener('submit', async (e) =
             document.getElementById('sched-title').value = '';
             document.getElementById('sched-label').value = '';
             await loadScheduledTasks();
-            // Show success
             const statusMsg = document.createElement('div');
             statusMsg.style.cssText = `
                 color: #4ade80;
@@ -7102,14 +6933,12 @@ document.getElementById('scheduled-form').addEventListener('submit', async (e) =
     }
 });
 
-// Close modal with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeScheduledModal();
     }
 });
 
-// Close modal on overlay click
 document.getElementById('scheduled-modal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeScheduledModal();
@@ -7121,8 +6950,6 @@ document.getElementById('scheduled-modal').addEventListener('click', function(e)
    INITIALIZE
    ============================================================ */
 
-loadATC();
-setInterval(loadATC, ATC_UPDATE_INTERVAL);
 loadFamily();
 loadTasks();
 loadGrocery();
