@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 LOG_FILE = BASE_DIR / "system_log.json"
-MAX_LOG_ENTRIES = 500  # Keep last 500 entries
+MAX_LOG_ENTRIES = 20  # Keep last 500 entries
 
 def load_logs():
     """Load logs from file."""
