@@ -247,15 +247,15 @@ CYCLE_CODES = {
     "36": {"name": "Hand Wash", "icon": "✋"},
     "38": {"name": "Cloudy Day", "icon": "☁️"},
     "37": {"name": "Allergy Care", "icon": "🤧"},
-    "29": {"name": "🧹 Drum Clean", "icon": "🧹"},
+    "29": {"name": "Drum Clean", "icon": "🧹"},
     "27": {"name": "Blouses", "icon": "👚"},
     "28": {"name": "Curtains", "icon": "🪟"},
     
     # Special cycles
-    "UC": {"name": "🧹 Drum Clean", "icon": "🧹"},
-    "DC": {"name": "🧹 Drum Clean", "icon": "🧹"},
-    "SC": {"name": "🧼 Self Clean", "icon": "🧼"},
-    "TB": {"name": "🧽 Tub Clean", "icon": "🧽"},
+    "UC": {"name": "Drum Clean", "icon": "🧹"},
+    "DC": {"name": "Drum Clean", "icon": "🧹"},
+    "SC": {"name": "Self Clean", "icon": "🧼"},
+    "TB": {"name": "Tub Clean", "icon": "🧽"},
 }
 
 def map_cycle_code(code):
@@ -287,134 +287,6 @@ def map_cycle_code(code):
         "28": "Curtains",
     }
     return cycle_map.get(code, f"Cycle {code}")
-
-# ============================================================
-# LIFESTYLE FEATURES
-# ============================================================
-
-# Motivational Quotes
-MOTIVATIONAL_QUOTES = [
-    {"quote": "The best time to start was yesterday. The next best time is now.", "author": "Unknown"},
-    {"quote": "Success is not final, failure is not fatal: it is the courage to continue that counts.", "author": "Winston Churchill"},
-    {"quote": "Believe you can and you're halfway there.", "author": "Theodore Roosevelt"},
-    {"quote": "It does not matter how slowly you go as long as you do not stop.", "author": "Confucius"},
-    {"quote": "The only way to do great work is to love what you do.", "author": "Steve Jobs"},
-    {"quote": "Innovation distinguishes between a leader and a follower.", "author": "Steve Jobs"},
-    {"quote": "Stay hungry, stay foolish.", "author": "Steve Jobs"},
-    {"quote": "The future belongs to those who believe in the beauty of their dreams.", "author": "Eleanor Roosevelt"},
-    {"quote": "Strive not to be a success, but rather to be of value.", "author": "Albert Einstein"},
-    {"quote": "Life is what happens when you're busy making other plans.", "author": "John Lennon"},
-    {"quote": "In the middle of difficulty lies opportunity.", "author": "Albert Einstein"},
-    {"quote": "The only impossible journey is the one you never begin.", "author": "Tony Robbins"},
-    {"quote": "Your time is limited, don't waste it living someone else's life.", "author": "Steve Jobs"},
-    {"quote": "The way to get started is to quit talking and begin doing.", "author": "Walt Disney"},
-    {"quote": "Don't watch the clock; do what it does. Keep going.", "author": "Sam Levenson"},
-]
-
-# Water Reminder Tips
-WATER_REMINDERS = [
-    {"tip": "💧 Drink a glass of water now! Your body needs it.", "icon": "💧"},
-    {"tip": "🌊 Stay hydrated - drink water regularly throughout the day.", "icon": "🌊"},
-    {"tip": "🥤 Time for a water break! Keep your body energized.", "icon": "🥤"},
-    {"tip": "💦 Water is essential for focus and productivity. Drink up!", "icon": "💦"},
-    {"tip": "🚰 Take a moment to hydrate. Your brain will thank you.", "icon": "🚰"},
-]
-
-# Stretch Break Reminders
-STRETCH_REMINDERS = [
-    {"tip": "🧘 Take a stretch break! Stand up and reach for the sky.", "icon": "🧘"},
-    {"tip": "🤸 Roll your shoulders back and take a deep breath.", "icon": "🤸"},
-    {"tip": "🧎 Do a quick neck stretch. Look left, right, up, and down.", "icon": "🧎"},
-    {"tip": "🦵 Stand up and do some calf stretches. Your legs need love too!", "icon": "🦵"},
-    {"tip": "🤲 Shake out your hands and wrists. Take a moment to relax.", "icon": "🤲"},
-]
-
-# Tech Tips
-TECH_TIPS = [
-    "💡 Did you know? You can use keyboard shortcuts to work faster. Try Ctrl+C, Ctrl+V!",
-    "💡 Remember to backup your important files regularly!",
-    "💡 Restart your computer occasionally to keep it running smoothly.",
-    "💡 Keep your software updated for better security and performance.",
-    "💡 Use a password manager to keep your accounts secure.",
-]
-
-# Daily Affirmations
-AFFIRMATIONS = [
-    "🌟 I am capable of achieving great things.",
-    "💪 I have the strength to overcome any challenge.",
-    "🧠 I am constantly learning and growing.",
-    "✨ I attract positive energy and opportunities.",
-    "🌱 I am becoming the best version of myself.",
-]
-
-_motivation_cache = None
-_motivation_cache_time = None
-_motivation_cache_duration = 3600  # 1 hour
-
-@app.get("/api/lifestyle/motivation")
-def get_motivation():
-    """Get a random motivational quote."""
-    global _motivation_cache, _motivation_cache_time
-    
-    # Check cache
-    if _motivation_cache and _motivation_cache_time:
-        elapsed = (datetime.now(timezone.utc) - _motivation_cache_time).total_seconds()
-        if elapsed < _motivation_cache_duration:
-            return _motivation_cache
-    
-    quote = random.choice(MOTIVATIONAL_QUOTES)
-    result = {
-        "success": True,
-        "quote": quote["quote"],
-        "author": quote["author"],
-        "updated": datetime.now(timezone.utc).isoformat()
-    }
-    
-    _motivation_cache = result
-    _motivation_cache_time = datetime.now(timezone.utc)
-    return result
-
-@app.get("/api/lifestyle/water-reminder")
-def get_water_reminder():
-    """Get a water reminder tip."""
-    tip = random.choice(WATER_REMINDERS)
-    return {
-        "success": True,
-        "tip": tip["tip"],
-        "icon": tip["icon"],
-        "updated": datetime.now(timezone.utc).isoformat()
-    }
-
-@app.get("/api/lifestyle/stretch-reminder")
-def get_stretch_reminder():
-    """Get a stretch break reminder."""
-    tip = random.choice(STRETCH_REMINDERS)
-    return {
-        "success": True,
-        "tip": tip["tip"],
-        "icon": tip["icon"],
-        "updated": datetime.now(timezone.utc).isoformat()
-    }
-
-@app.get("/api/lifestyle/tech-tip")
-def get_tech_tip():
-    """Get a random tech tip."""
-    tip = random.choice(TECH_TIPS)
-    return {
-        "success": True,
-        "tip": tip,
-        "updated": datetime.now(timezone.utc).isoformat()
-    }
-
-@app.get("/api/lifestyle/affirmation")
-def get_affirmation():
-    """Get a daily affirmation."""
-    affirmation = random.choice(AFFIRMATIONS)
-    return {
-        "success": True,
-        "affirmation": affirmation,
-        "updated": datetime.now(timezone.utc).isoformat()
-    }
 
 # ============================================================
 # OPENSKY OAUTH2 TOKEN MANAGER
@@ -1017,21 +889,16 @@ def parse_washer_status(data):
                         break
         
         # IMPORTANT: Also check for top-level capabilities that might not be in "main"
-        # The data shows washerOperatingState is at the root of capabilities
         if not capabilities.get("samsungce.washerOperatingState"):
-            # Try to find washerOperatingState directly in any component
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
-                    # Check if this component has washerOperatingState directly
                     if "samsungce.washerOperatingState" in comp_data:
-                        # Merge this component's capabilities
                         for key, value in comp_data.items():
                             if key not in capabilities:
                                 capabilities[key] = value
         
         # If still no capabilities, try using the raw data directly
         if not capabilities:
-            # Look for washerOperatingState anywhere in the data
             for key, value in data.items():
                 if key == "samsungce.washerOperatingState" or "washerOperatingState" in key:
                     capabilities[key] = value
@@ -1039,17 +906,14 @@ def parse_washer_status(data):
         # Get washer operating state - try multiple locations
         washer_ops = {}
         
-        # Try to get from capabilities
         if "samsungce.washerOperatingState" in capabilities:
             washer_ops = capabilities.get("samsungce.washerOperatingState", {})
         else:
-            # Try to find it in the data directly
             for key, value in data.items():
                 if "washerOperatingState" in key:
                     washer_ops = value
                     break
         
-        # If washer_ops is empty, try to find it in components
         if not washer_ops:
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
@@ -1072,7 +936,6 @@ def parse_washer_status(data):
         elif "samsungce.switch" in capabilities:
             switch_state = capabilities.get("samsungce.switch", {}).get("switch", {}).get("value", "unknown")
         else:
-            # Try to find switch in components
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
                     if "switch" in comp_data:
@@ -1087,7 +950,6 @@ def parse_washer_status(data):
         if "custom.supportedOptions" in capabilities:
             course = capabilities.get("custom.supportedOptions", {}).get("course", {}).get("value", "unknown")
         else:
-            # Try to find in components
             for comp_name, comp_data in components.items():
                 if isinstance(comp_data, dict):
                     if "custom.supportedOptions" in comp_data:
@@ -1100,7 +962,6 @@ def parse_washer_status(data):
         # Check if running
         is_running = False
         
-        # Check operating state
         if operating_state == "running":
             is_running = True
         elif switch_state == "on":
@@ -1134,13 +995,13 @@ def parse_washer_status(data):
         # Get status info
         status_info = WASHER_STATUS_MAP.get(status_key, WASHER_STATUS_MAP["unknown"])
         
-        # Determine cycle name
+        # Determine cycle name - FIXED: removed duplicate emoji
         cycle_name = "Unknown"
         cycle_icon = "🔄"
         
         # Check if it's Drum Clean
         if washer_job_state == "drumCleaning" or washer_job_phase == "drumCleaning":
-            cycle_name = "🧹 Drum Clean"
+            cycle_name = "Drum Clean"
             cycle_icon = "🧹"
         elif course and course != "unknown":
             cycle_info = CYCLE_CODES.get(course, {"name": f"Cycle {course}", "icon": "🔄"})
@@ -1149,7 +1010,7 @@ def parse_washer_status(data):
         
         # If still unknown, try to determine from job state
         if cycle_name == "Unknown" and washer_job_state not in ["unknown", "finished", "none"]:
-            cycle_name = f"📌 {washer_job_state.capitalize()}"
+            cycle_name = f"{washer_job_state.capitalize()}"
             cycle_icon = "⚙️"
         
         # Build result
@@ -2890,7 +2751,7 @@ def get_audio(filename: str):
     )
 
 # ============================================================
-# MAIN
+# MAIN - Compatible with both local and Render
 # ============================================================
 
 if __name__ == "__main__":
@@ -2900,19 +2761,27 @@ if __name__ == "__main__":
     print("🏠 SMART FRIDGE DASHBOARD")
     print("="*50)
     
-    # Get and display IP addresses
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        print(f"\n📱 Access the dashboard at:")
-        print(f"   → http://{local_ip}:8000")
-        print(f"   → http://localhost:8000")
-    except:
-        print("\n📱 Access the dashboard at: http://localhost:8000")
+    # Check if running on Render
+    is_render = os.environ.get("RENDER", "false").lower() == "true"
+    
+    if is_render:
+        print("\n📱 Deployed on Render")
+        print(f"   Service URL: https://{os.environ.get('RENDER_SERVICE_NAME', 'smartfridge-dashboard')}.onrender.com")
+    else:
+        # Get and display IP addresses for local development
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            print(f"\n📱 Access the dashboard at:")
+            print(f"   → http://{local_ip}:8000")
+            print(f"   → http://localhost:8000")
+        except:
+            print("\n📱 Access the dashboard at: http://localhost:8000")
     
     print("\n" + "="*50)
     print("🚀 Starting server...\n")
     
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
