@@ -56,6 +56,17 @@ CREDENTIALS_FILE = BASE_DIR / "credentials.json"
 TOKEN_FILE = BASE_DIR / "token.json"
 
 # ============================================================
+# ENVIRONMENT DETECTION
+# ============================================================
+
+IS_RENDER = os.environ.get("RENDER", "false").lower() == "true"
+
+if IS_RENDER:
+    print("🌐 Running on Render.com")
+else:
+    print("💻 Running locally")
+
+# ============================================================
 # APP
 # ============================================================
 
@@ -289,7 +300,7 @@ def map_cycle_code(code):
     return cycle_map.get(code, f"Cycle {code}")
 
 # ============================================================
-# OPENSKY OAUTH2 TOKEN MANAGER
+# OPENSKY OAUTH2 TOKEN MANAGER (FIXED FOR RENDER)
 # ============================================================
 
 TOKEN_URL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
@@ -299,8 +310,9 @@ OPENSKY_CLIENT_SECRET = os.getenv("OPENSKY_CLIENT_SECRET")
 
 if OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET:
     print("✅ Loaded OpenSky credentials from environment variables")
-
-if not OPENSKY_CLIENT_ID or not OPENSKY_CLIENT_SECRET:
+    HAS_VALID_CREDENTIALS = True
+else:
+    # Try loading from file (local development)
     OPENSKY_CREDENTIALS_FILE = BASE_DIR / "opensky_credentials.json"
     if OPENSKY_CREDENTIALS_FILE.exists():
         try:
@@ -324,12 +336,11 @@ if not OPENSKY_CLIENT_ID or not OPENSKY_CLIENT_SECRET:
             print(f"❌ Error loading OpenSky credentials JSON: {e}")
 
 if not OPENSKY_CLIENT_ID or not OPENSKY_CLIENT_SECRET:
-    print("⚠️ Trying hardcoded credentials (for testing)...")
-    OPENSKY_CLIENT_ID = "bansi-api-client"
-    OPENSKY_CLIENT_SECRET = "fkUpnnDfn2yAYkSgWIO5FvmBsxeIQlBT"
-    print("✅ Using hardcoded credentials")
+    print("⚠️ No OpenSky credentials found - using unauthenticated API")
+    HAS_VALID_CREDENTIALS = False
+else:
+    HAS_VALID_CREDENTIALS = True
 
-HAS_VALID_CREDENTIALS = bool(OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET)
 TOKEN_REFRESH_MARGIN = 30
 
 class TokenManager:
@@ -346,8 +357,15 @@ class TokenManager:
         return self._refresh()
 
     def _refresh(self):
+        if not self._has_valid_credentials:
+            return None
+            
         try:
             print("🔄 Refreshing OpenSky token...")
+            
+            # Longer timeout for Render
+            timeout = 30 if IS_RENDER else 10
+            
             r = requests.post(
                 TOKEN_URL,
                 data={
@@ -355,21 +373,37 @@ class TokenManager:
                     "client_id": OPENSKY_CLIENT_ID,
                     "client_secret": OPENSKY_CLIENT_SECRET,
                 },
-                timeout=10,
+                timeout=timeout,
             )
+            
             if r.status_code == 401:
-                print("❌ Authentication failed!")
+                print("❌ Authentication failed! Check your OpenSky credentials.")
                 self._has_valid_credentials = False
                 return None
+                
             r.raise_for_status()
             data = r.json()
             self.token = data["access_token"]
             expires_in = data.get("expires_in", 1800)
             self.expires_at = datetime.now() + timedelta(seconds=expires_in - TOKEN_REFRESH_MARGIN)
-            print(f"✅ OpenSky token refreshed")
+            print(f"✅ OpenSky token refreshed successfully")
             return self.token
+            
+        except requests.exceptions.Timeout:
+            print(f"⚠️ OpenSky auth timeout (connection to auth.opensky-network.org took too long)")
+            print("   Using unauthenticated API as fallback")
+            self._has_valid_credentials = False
+            return None
+            
+        except requests.exceptions.ConnectionError:
+            print(f"⚠️ OpenSky auth connection error - server unreachable")
+            print("   Using unauthenticated API as fallback")
+            self._has_valid_credentials = False
+            return None
+            
         except Exception as e:
             print(f"❌ Failed to get OpenSky token: {e}")
+            self._has_valid_credentials = False
             return None
 
     def headers(self):
@@ -705,34 +739,93 @@ initialize_default_scheduled_task()
 # ============================================================
 
 def get_google_credentials():
+    """Get Google credentials from environment variables or local files."""
     creds = None
+    
+    # Try environment variables first (for Render)
+    creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    token_json = os.getenv("GOOGLE_TOKEN_JSON")
+    
+    if creds_json and token_json:
+        try:
+            print("🔑 Loading Google credentials from environment variables...")
+            creds_dict = json.loads(creds_json)
+            token_dict = json.loads(token_json)
+            
+            # Create credentials from stored info
+            creds = Credentials(
+                token=token_dict.get("token"),
+                refresh_token=token_dict.get("refresh_token"),
+                token_uri=token_dict.get("token_uri", "https://oauth2.googleapis.com/token"),
+                client_id=creds_dict.get("installed", {}).get("client_id") or creds_dict.get("web", {}).get("client_id"),
+                client_secret=creds_dict.get("installed", {}).get("client_secret") or creds_dict.get("web", {}).get("client_secret"),
+                scopes=SCOPES
+            )
+            
+            # Refresh if expired
+            if creds.expired and creds.refresh_token:
+                print("🔄 Refreshing Google token...")
+                creds.refresh(Request())
+            
+            print("✅ Google credentials loaded from environment")
+            return creds
+        except Exception as e:
+            print(f"⚠️ Failed to load Google credentials from env: {e}")
+    
+    # Fallback to local files (for local development)
     if TOKEN_FILE.exists():
         try:
+            print("📁 Loading Google credentials from local files...")
             creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-        except Exception:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+            if creds and creds.valid:
+                print("✅ Google credentials loaded from local files")
+                return creds
+        except Exception as e:
+            print(f"⚠️ Failed to load from token.json: {e}")
             creds = None
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+    
+    # If no credentials, try OAuth flow (local only)
     if not creds or not creds.valid:
         if not CREDENTIALS_FILE.exists():
-            raise Exception("credentials.json not found.")
-        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-        creds = flow.run_local_server(port=0)
-        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+            print("⚠️ credentials.json not found. Using local storage only.")
+            return None
+        try:
+            print("🔐 Starting OAuth flow...")
+            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+            creds = flow.run_local_server(port=0)
+            TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+            print("✅ OAuth flow completed successfully")
+            return creds
+        except Exception as e:
+            print(f"⚠️ OAuth flow failed: {e}")
+            return None
+    
     return creds
 
 def get_google_tasks_service():
-    return build("tasks", "v1", credentials=get_google_credentials())
+    try:
+        return build("tasks", "v1", credentials=get_google_credentials())
+    except Exception as e:
+        print(f"⚠️ Google Tasks service unavailable: {e}")
+        return None
 
 def get_google_calendar_service():
-    return build("calendar", "v3", credentials=get_google_credentials())
+    try:
+        return build("calendar", "v3", credentials=get_google_credentials())
+    except Exception as e:
+        print(f"⚠️ Google Calendar service unavailable: {e}")
+        return None
 
 # ============================================================
 # TASK HELPERS
 # ============================================================
 
 def get_default_task_list(service):
+    if not service:
+        return None
     result = service.tasklists().list(maxResults=100).execute()
     lists = result.get("items", [])
     if not lists:
@@ -1179,6 +1272,9 @@ def get_tasks():
     try:
         # Try Google API first
         service = get_google_tasks_service()
+        if not service:
+            raise Exception("Google Tasks service unavailable")
+            
         task_lists = service.tasklists().list(maxResults=100).execute()
         all_tasks = []
         for task_list in task_lists.get("items", []):
@@ -1225,29 +1321,56 @@ def create_task(task: TaskCreate):
         
         # Try Google API first
         service = get_google_tasks_service()
-        task_list = get_default_task_list(service)
-        created = service.tasks().insert(
-            tasklist=task_list["id"],
-            body={"title": make_task_title(task.title, task.member)},
-        ).execute()
+        if service:
+            task_list = get_default_task_list(service)
+            if task_list:
+                created = service.tasks().insert(
+                    tasklist=task_list["id"],
+                    body={"title": make_task_title(task.title, task.member)},
+                ).execute()
+                
+                parsed = parse_task(created)
+                
+                # Also save to local
+                local_data = load_local_tasks()
+                local_tasks = local_data.get("tasks", [])
+                local_tasks.append(parsed)
+                save_local_tasks(local_tasks)
+                
+                return {
+                    "success": True, 
+                    "task": parsed,
+                    "source": "google",
+                    "fallback": False
+                }
         
-        parsed = parse_task(created)
-        
-        # Also save to local
+        # Fallback to local storage
+        member = get_member(task.member)
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
-        local_tasks.append(parsed)
+        
+        new_task = {
+            "id": f"local_{datetime.now(timezone.utc).timestamp()}",
+            "title": task.title.strip(),
+            "member": task.member,
+            "member_name": member["name"] if member else task.member,
+            "member_emoji": member["emoji"] if member else "👤",
+            "task_list": "Local Tasks",
+            "local": True
+        }
+        local_tasks.append(new_task)
         save_local_tasks(local_tasks)
         
         return {
-            "success": True, 
-            "task": parsed,
-            "source": "google",
-            "fallback": False
+            "success": True,
+            "task": new_task,
+            "source": "local",
+            "fallback": True,
+            "fallback_reason": "Google service unavailable"
         }
         
     except Exception as e:
-        print(f"⚠️ Google Tasks create error: {e}, using local fallback")
+        print(f"⚠️ Task create error: {e}, using local fallback")
         
         # Fallback to local storage
         member = get_member(task.member)
@@ -1279,28 +1402,44 @@ def complete_task(task_id: str):
     try:
         # Try Google API first
         service = get_google_tasks_service()
-        task_list = get_default_task_list(service)
-        result = service.tasks().patch(
-            tasklist=task_list["id"],
-            task=task_id,
-            body={"status": "completed"},
-        ).execute()
+        if service:
+            task_list = get_default_task_list(service)
+            if task_list:
+                result = service.tasks().patch(
+                    tasklist=task_list["id"],
+                    task=task_id,
+                    body={"status": "completed"},
+                ).execute()
+                
+                # Remove from local if it exists
+                local_data = load_local_tasks()
+                local_tasks = local_data.get("tasks", [])
+                local_tasks = [t for t in local_tasks if t.get("id") != task_id]
+                save_local_tasks(local_tasks)
+                
+                return {
+                    "success": True, 
+                    "task": result["id"],
+                    "source": "google",
+                    "fallback": False
+                }
         
-        # Remove from local if it exists
+        # Fallback: remove from local
         local_data = load_local_tasks()
         local_tasks = local_data.get("tasks", [])
         local_tasks = [t for t in local_tasks if t.get("id") != task_id]
         save_local_tasks(local_tasks)
         
         return {
-            "success": True, 
-            "task": result["id"],
-            "source": "google",
-            "fallback": False
+            "success": True,
+            "task": task_id,
+            "source": "local",
+            "fallback": True,
+            "fallback_reason": "Google service unavailable"
         }
         
     except Exception as e:
-        print(f"⚠️ Google Tasks complete error: {e}, using local fallback")
+        print(f"⚠️ Task complete error: {e}")
         
         # Fallback: remove from local
         local_data = load_local_tasks()
@@ -1325,6 +1464,9 @@ def get_calendar():
     try:
         # Try Google API first
         service = get_google_calendar_service()
+        if not service:
+            raise Exception("Google Calendar service unavailable")
+            
         now = datetime.now(timezone.utc).isoformat()
         result = service.events().list(
             calendarId="primary",
@@ -1376,38 +1518,65 @@ def create_calendar_event(event: EventCreate):
         
         # Try Google API first
         service = get_google_calendar_service()
+        if service:
+            start_datetime = f"{event.date}T{event.start_time}:00"
+            end_datetime = f"{event.date}T{event.end_time}:00"
+            body = {
+                "summary": event.title.strip(),
+                "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
+                "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
+            }
+            created = service.events().insert(calendarId="primary", body=body).execute()
+            
+            event_data = {
+                "id": created.get("id"),
+                "title": created.get("summary"),
+                "start": created["start"].get("dateTime"),
+                "end": created["end"].get("dateTime"),
+                "all_day": False,
+            }
+            
+            # Also save to local
+            local_data = load_local_calendar()
+            local_events = local_data.get("events", [])
+            local_events.append(event_data)
+            save_local_calendar(local_events)
+            
+            return {
+                "success": True,
+                "event": event_data,
+                "source": "google",
+                "fallback": False
+            }
+        
+        # Fallback to local storage
         start_datetime = f"{event.date}T{event.start_time}:00"
         end_datetime = f"{event.date}T{event.end_time}:00"
-        body = {
-            "summary": event.title.strip(),
-            "start": {"dateTime": start_datetime, "timeZone": "Asia/Kolkata"},
-            "end": {"dateTime": end_datetime, "timeZone": "Asia/Kolkata"},
-        }
-        created = service.events().insert(calendarId="primary", body=body).execute()
         
-        event_data = {
-            "id": created.get("id"),
-            "title": created.get("summary"),
-            "start": created["start"].get("dateTime"),
-            "end": created["end"].get("dateTime"),
-            "all_day": False,
-        }
-        
-        # Also save to local
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
-        local_events.append(event_data)
+        
+        new_event = {
+            "id": f"local_{datetime.now(timezone.utc).timestamp()}",
+            "title": event.title.strip(),
+            "start": start_datetime,
+            "end": end_datetime,
+            "all_day": False,
+            "local": True
+        }
+        local_events.append(new_event)
         save_local_calendar(local_events)
         
         return {
             "success": True,
-            "event": event_data,
-            "source": "google",
-            "fallback": False
+            "event": new_event,
+            "source": "local",
+            "fallback": True,
+            "fallback_reason": "Google service unavailable"
         }
         
     except Exception as e:
-        print(f"⚠️ Google Calendar create error: {e}, using local fallback")
+        print(f"⚠️ Calendar create error: {e}")
         
         # Fallback to local storage
         start_datetime = f"{event.date}T{event.start_time}:00"
@@ -1440,45 +1609,58 @@ def delete_calendar_event(event_id: str):
     try:
         # Try Google API first
         service = get_google_calendar_service()
-        try:
-            event = service.events().get(calendarId='primary', eventId=event_id).execute()
-            print(f"✅ Found event: '{event.get('summary', 'Untitled')}' (ID: {event_id})")
-        except Exception as e:
-            print(f"⚠️ Event not found in Google: {e}")
-            # Check if it's a local event
-            local_data = load_local_calendar()
-            local_events = local_data.get("events", [])
-            local_event = next((e for e in local_events if e.get("id") == event_id), None)
-            if local_event:
+        if service:
+            try:
+                event = service.events().get(calendarId='primary', eventId=event_id).execute()
+                print(f"✅ Found event: '{event.get('summary', 'Untitled')}' (ID: {event_id})")
+                service.events().delete(calendarId='primary', eventId=event_id).execute()
+                print(f"✅ Event deleted successfully: {event_id}")
+                
+                # Also remove from local
+                local_data = load_local_calendar()
+                local_events = local_data.get("events", [])
                 local_events = [e for e in local_events if e.get("id") != event_id]
                 save_local_calendar(local_events)
+                
                 return {
                     "success": True, 
-                    "message": "Local event deleted successfully",
+                    "message": "Event deleted successfully",
                     "event_id": event_id,
-                    "source": "local",
-                    "fallback": True
+                    "source": "google",
+                    "fallback": False
                 }
-            return JSONResponse(
-                status_code=404,
-                content={"success": False, "error": "Event not found", "event_id": event_id}
-            )
+            except Exception as e:
+                print(f"⚠️ Event not found in Google: {e}")
+                # Check if it's a local event
+                local_data = load_local_calendar()
+                local_events = local_data.get("events", [])
+                local_event = next((e for e in local_events if e.get("id") == event_id), None)
+                if local_event:
+                    local_events = [e for e in local_events if e.get("id") != event_id]
+                    save_local_calendar(local_events)
+                    return {
+                        "success": True, 
+                        "message": "Local event deleted successfully",
+                        "event_id": event_id,
+                        "source": "local",
+                        "fallback": True
+                    }
+                return JSONResponse(
+                    status_code=404,
+                    content={"success": False, "error": "Event not found", "event_id": event_id}
+                )
         
-        service.events().delete(calendarId='primary', eventId=event_id).execute()
-        print(f"✅ Event deleted successfully: {event_id}")
-        
-        # Also remove from local
+        # Try local deletion as fallback
         local_data = load_local_calendar()
         local_events = local_data.get("events", [])
         local_events = [e for e in local_events if e.get("id") != event_id]
         save_local_calendar(local_events)
-        
         return {
-            "success": True, 
-            "message": "Event deleted successfully",
+            "success": True,
+            "message": "Event deleted from local storage",
             "event_id": event_id,
-            "source": "google",
-            "fallback": False
+            "source": "local",
+            "fallback": True
         }
         
     except Exception as e:
@@ -1505,14 +1687,14 @@ def sync_tasks_to_google():
     """Sync local tasks to Google when it comes back online."""
     try:
         # Check if Google is available
-        try:
-            service = get_google_tasks_service()
-            service.tasklists().list(maxResults=1).execute()
-        except Exception as e:
+        service = get_google_tasks_service()
+        if not service:
             return JSONResponse(
                 status_code=503,
-                content={"success": False, "error": "Google Tasks not available", "details": str(e)}
+                content={"success": False, "error": "Google Tasks not available"}
             )
+        
+        service.tasklists().list(maxResults=1).execute()
         
         # Load local tasks
         local_data = load_local_tasks()
@@ -1523,6 +1705,8 @@ def sync_tasks_to_google():
         
         # Get default task list
         task_list = get_default_task_list(service)
+        if not task_list:
+            return {"success": False, "error": "No task list found"}
         
         synced = 0
         failed = 0
@@ -1567,14 +1751,14 @@ def sync_calendar_to_google():
     """Sync local calendar events to Google when it comes back online."""
     try:
         # Check if Google is available
-        try:
-            service = get_google_calendar_service()
-            service.events().list(calendarId="primary", maxResults=1).execute()
-        except Exception as e:
+        service = get_google_calendar_service()
+        if not service:
             return JSONResponse(
                 status_code=503,
-                content={"success": False, "error": "Google Calendar not available", "details": str(e)}
+                content={"success": False, "error": "Google Calendar not available"}
             )
+        
+        service.events().list(calendarId="primary", maxResults=1).execute()
         
         # Load local events
         local_data = load_local_calendar()
@@ -1636,16 +1820,18 @@ def check_google_status():
     # Check Tasks
     try:
         service = get_google_tasks_service()
-        service.tasklists().list(maxResults=1).execute()
-        results["tasks"]["available"] = True
+        if service:
+            service.tasklists().list(maxResults=1).execute()
+            results["tasks"]["available"] = True
     except Exception as e:
         results["tasks"]["error"] = str(e)
     
     # Check Calendar
     try:
         service = get_google_calendar_service()
-        service.events().list(calendarId="primary", maxResults=1).execute()
-        results["calendar"]["available"] = True
+        if service:
+            service.events().list(calendarId="primary", maxResults=1).execute()
+            results["calendar"]["available"] = True
     except Exception as e:
         results["calendar"]["error"] = str(e)
     
