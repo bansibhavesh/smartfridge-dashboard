@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: smartfridge-dashboard
+    runtime: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SMARTTHINGS_TOKEN
+        sync: false
+      - key: SMARTTHINGS_DEVICE_ID
+        sync: false
+      - key: NEWS_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.8
