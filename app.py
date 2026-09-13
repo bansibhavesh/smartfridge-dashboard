@@ -840,7 +840,7 @@ def health():
         "status": "ok",
         "kv_enabled": KV_ENABLED,
         "time": datetime.now(timezone.utc).isoformat(),
-        "version": "2.1"
+        "version": "2.2"
     }
 
 # ============================================================
@@ -1650,6 +1650,22 @@ def weather_icon_owm(code, is_day=True):
     elif code in (803, 804): return "☁️"
     else: return "🌤️"
 
+def compute_weather_alerts(weather_code, feels_like, rain_probability):
+    """Return a list of alerts sorted by priority (most urgent first)."""
+    alerts = []
+    if rain_probability >= 50:
+        alerts.append({"icon": "🌧️", "text": f"Rain likely ({rain_probability}%)", "priority": 1})
+    if 200 <= weather_code < 300:
+        alerts.append({"icon": "⛈️", "text": "Thunderstorms expected", "priority": 1})
+    if 600 <= weather_code < 700:
+        alerts.append({"icon": "❄️", "text": "Snow expected", "priority": 1})
+    if feels_like >= 32:
+        alerts.append({"icon": "🥵", "text": f"Heat warning — feels like {feels_like}°C", "priority": 2})
+    if feels_like <= 22:
+        alerts.append({"icon": "🧥", "text": f"Cold — feels like {feels_like}°C", "priority": 2})
+    alerts.sort(key=lambda a: a["priority"])
+    return alerts[:2]
+
 @app.get("/api/weather")
 def get_weather():
     global _weather_cache, _weather_cache_time
@@ -1662,6 +1678,12 @@ def get_weather():
         weather_data = get_weather_from_openweather()
         if not weather_data:
             return get_weather_from_openmeteo()
+
+        alerts = compute_weather_alerts(
+            weather_data["weather_code"],
+            weather_data["feels_like"],
+            weather_data["rain_probability"]
+        )
 
         result = {
             "success": True,
@@ -1677,7 +1699,8 @@ def get_weather():
             "pressure": weather_data["pressure"],
             "icon": weather_icon_owm(weather_data["weather_code"], weather_data["is_day"]),
             "updated": datetime.now(timezone.utc).isoformat(),
-            "source": "OpenWeatherMap"
+            "source": "OpenWeatherMap",
+            "alerts": alerts
         }
         _weather_cache = result
         _weather_cache_time = datetime.now(timezone.utc)
@@ -1709,10 +1732,13 @@ def get_weather_from_openmeteo():
             if h < len(data["hourly"]["precipitation_probability"]):
                 rain_probability = data["hourly"]["precipitation_probability"][h]
 
+        feels_like = round(current.get("apparent_temperature", 0))
+        alerts = compute_weather_alerts(weather_code, feels_like, rain_probability)
+
         return {
             "success": True,
             "temperature": round(current.get("temperature_2m", 0)),
-            "feels_like": round(current.get("apparent_temperature", 0)),
+            "feels_like": feels_like,
             "humidity": round(current.get("relative_humidity_2m", 0)),
             "wind_speed": round(current.get("wind_speed_10m", 0)),
             "weather_code": weather_code,
@@ -1723,7 +1749,8 @@ def get_weather_from_openmeteo():
             "pressure": 0,
             "icon": weather_icon_owm(weather_code, is_day),
             "updated": datetime.now(timezone.utc).isoformat(),
-            "source": "Open-Meteo (Fallback)"
+            "source": "Open-Meteo (Fallback)",
+            "alerts": alerts
         }
     except Exception as e:
         return {
@@ -1732,7 +1759,7 @@ def get_weather_from_openmeteo():
             "weather_code": 800, "weather_text": "Weather unavailable",
             "rain_probability": 0, "is_day": True, "cloud_cover": 0, "pressure": 0,
             "icon": "🌤️", "updated": datetime.now(timezone.utc).isoformat(),
-            "source": "Error"
+            "source": "Error", "alerts": []
         }
 
 @app.get("/api/weather/alert")
@@ -1752,6 +1779,87 @@ def weather_alert():
         return {"alert": None}
     except Exception as e:
         return {"alert": None, "error": str(e)}
+
+# ============================================================
+# WEEK-AHEAD WEATHER
+# ============================================================
+
+_week_weather_cache = None
+_week_weather_cache_time = None
+_week_weather_cache_duration = 1800  # 30 min
+
+@app.get("/api/weather/week")
+def get_week_weather():
+    global _week_weather_cache, _week_weather_cache_time
+
+    try:
+        if _week_weather_cache and _week_weather_cache_time:
+            elapsed = (datetime.now(timezone.utc) - _week_weather_cache_time).total_seconds()
+            if elapsed < _week_weather_cache_duration:
+                return _week_weather_cache
+
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={WEATHER_LAT}"
+            f"&longitude={WEATHER_LON}"
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+            "&timezone=auto"
+            "&forecast_days=7"
+        )
+        response = requests.get(url, timeout=10)
+        if not response.ok:
+            raise Exception(f"Open-Meteo returned {response.status_code}")
+
+        data = response.json()
+        daily = data.get("daily", {})
+
+        dates = daily.get("time", [])
+        codes = daily.get("weather_code", [])
+        highs = daily.get("temperature_2m_max", [])
+        lows = daily.get("temperature_2m_min", [])
+        rain = daily.get("precipitation_probability_max", [])
+
+        days = []
+        for i in range(min(len(dates), 7)):
+            try:
+                day_date = datetime.strptime(dates[i], "%Y-%m-%d")
+                day_label = day_date.strftime("%a")
+            except Exception:
+                day_label = "?"
+
+            code = codes[i] if i < len(codes) else 800
+            high = round(highs[i]) if i < len(highs) and highs[i] is not None else 0
+            low = round(lows[i]) if i < len(lows) and lows[i] is not None else 0
+            rain_p = round(rain[i]) if i < len(rain) and rain[i] is not None else 0
+
+            days.append({
+                "date": dates[i],
+                "day": day_label,
+                "code": code,
+                "icon": weather_icon_owm(code, True),
+                "high": high,
+                "low": low,
+                "rain": rain_p,
+            })
+
+        result = {
+            "success": True,
+            "days": days,
+            "updated": datetime.now(timezone.utc).isoformat(),
+            "source": "Open-Meteo"
+        }
+
+        _week_weather_cache = result
+        _week_weather_cache_time = datetime.now(timezone.utc)
+        return result
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "days": [],
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
 
 # ============================================================
 # GROCERY
@@ -1941,7 +2049,7 @@ def register_mdns():
             "Smart Fridge._http._tcp.local.",
             addresses=[socket.inet_aton(local_ip)],
             port=8000,
-            properties={"path": "/", "name": "Smart Fridge Dashboard", "version": "2.1"},
+            properties={"path": "/", "name": "Smart Fridge Dashboard", "version": "2.2"},
         )
         zeroconf.register_service(service_info)
         print(f"✅ mDNS registered: http://{local_ip}:8000")

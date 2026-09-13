@@ -419,7 +419,7 @@ html, body {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: rgba(18, 23, 32, 0.6);
+    background: rgba(18, 23, 32, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 18px;
     padding: 14px;
@@ -440,7 +440,7 @@ html, body {
 
 .card h2 {
     flex-shrink: 0;
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     color: rgba(156, 163, 175, 0.8);
     font-size: clamp(10px, 0.9vw, 14px);
     font-weight: 600;
@@ -453,22 +453,22 @@ html, body {
 
 
 /* ============================================================
-   ISOLATED DIMMING — news card only elevates when dimmed
+   ISOLATED DIMMING — tasks + news punch through the dim overlay
    ============================================================ */
 
-.card.news-card {
+.card.news-card,
+.card.task-card {
     position: relative;
     z-index: 1;
     transition: all 0.6s ease;
 }
 
-body.dimmed .card.news-card {
-    z-index: 99998;   /* jumps above #dimOverlay (99997) only when dimmed */
+body.dimmed .card.news-card,
+body.dimmed .card.task-card {
+    z-index: 99998;
     background: rgba(18, 23, 32, 0.98);
     box-shadow: 0 0 80px rgba(138, 180, 255, 0.2), 0 12px 48px rgba(0, 0, 0, 0.6);
     border-color: rgba(138, 180, 255, 0.15);
-    /* Uncomment for subtle dim so it doesn't burn at 3am: */
-    /* filter: brightness(0.85); */
 }
 
 
@@ -476,7 +476,12 @@ body.dimmed .card.news-card {
    WEATHER
    ============================================================ */
 
-.weather-card { position: relative; overflow: hidden; }
+.weather-card {
+    position: relative;
+    overflow: hidden;
+    background: rgba(18, 23, 32, 0.85);
+    padding-bottom: 12px;
+}
 
 .weather-card::before {
     content: '';
@@ -499,20 +504,21 @@ body.dimmed .card.news-card {
 .weather-card .weather-main,
 .weather-card .weather-details,
 .weather-card .weather-temp-bar,
-.weather-card .weather-fact { position: relative; z-index: 1; }
+.weather-card .week-strip,
+.weather-card .weather-info-strip { position: relative; z-index: 1; }
 
 .weather { justify-content: space-between; }
 
 .weather-main {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-top: 2px;
+    gap: 12px;
+    margin-top: 0;
     animation: fadeIn 0.8s ease;
 }
 
 .weather-icon {
-    font-size: clamp(40px, 4vw, 64px);
+    font-size: clamp(34px, 3.5vw, 52px);
     animation: float 4s ease-in-out infinite;
     transition: transform 0.4s ease;
 }
@@ -523,7 +529,7 @@ body.dimmed .card.news-card {
 .weather-icon:hover { transform: scale(1.2) rotate(15deg); }
 
 .weather-temp {
-    font-size: clamp(30px, 3vw, 48px);
+    font-size: clamp(26px, 2.6vw, 40px);
     font-weight: 700;
     background: linear-gradient(135deg, #8ab4ff, #4ade80);
     background-size: 200% 200%;
@@ -536,53 +542,222 @@ body.dimmed .card.news-card {
 
 .weather-condition {
     color: rgba(156, 163, 175, 0.8);
-    font-size: clamp(10px, 1vw, 14px);
+    font-size: clamp(10px, 0.9vw, 13px);
     font-weight: 500;
 }
 
-.weather-temp-bar { margin-top: 10px; width: 100%; position: relative; z-index: 1; }
+.weather-temp-bar { margin-top: 8px; width: 100%; position: relative; z-index: 1; }
 .temp-range { display: flex; align-items: center; gap: 10px; }
-.temp-track { flex: 1; height: 4px; background: rgba(37, 44, 56, 0.5); border-radius: 4px; position: relative; overflow: hidden; }
+.temp-track { flex: 1; height: 3px; background: rgba(37, 44, 56, 0.5); border-radius: 4px; position: relative; overflow: hidden; }
 .temp-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, #4ade80, #fbbf24, #f87171); transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.temp-labels { display: flex; justify-content: space-between; font-size: 8px; color: rgba(107, 114, 128, 0.6); margin-top: 3px; }
+.temp-labels { display: flex; justify-content: space-between; font-size: 8px; color: rgba(107, 114, 128, 0.6); margin-top: 2px; }
 #current-temp-label { color: white; font-weight: 700; }
 
-.weather-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+.weather-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+}
 
 .weather-detail {
     background: rgba(26, 32, 43, 0.6);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 9px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 8px;
     color: rgba(156, 163, 175, 0.7);
     animation: fadeInUp 0.6s ease both;
     display: flex;
     flex-direction: column;
-    min-height: 50px;
+    min-height: 38px;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.weather-detail strong { display: block; color: white; font-size: 15px; font-weight: 700; margin-top: 2px; line-height: 1.2; }
+.weather-detail strong { display: block; color: white; font-size: 13px; font-weight: 700; margin-top: 1px; line-height: 1.2; }
 .weather-detail:nth-child(1) { animation-delay: 0.05s; }
 .weather-detail:nth-child(2) { animation-delay: 0.1s; }
 .weather-detail:nth-child(3) { animation-delay: 0.15s; }
 .weather-detail:nth-child(4) { animation-delay: 0.2s; }
 
-.weather-fact {
-    margin-top: 10px;
-    padding: 10px 14px;
-    background: rgba(26, 32, 43, 0.4);
-    border-radius: 10px;
-    font-size: 13px;
+
+/* ============================================================
+   WEEK-AHEAD WEATHER STRIP
+   ============================================================ */
+
+.week-strip {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.6s ease both;
+}
+
+.week-strip-loading {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: rgba(107, 114, 128, 0.5);
+    font-size: 10px;
+    padding: 10px;
+}
+
+.week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 4px 2px;
+    background: rgba(26, 32, 43, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-width: 0;
+}
+
+.week-day:hover {
+    background: rgba(37, 47, 64, 0.6);
+    transform: translateY(-2px);
+    border-color: rgba(138, 180, 255, 0.15);
+}
+
+.week-day.today {
+    border-color: rgba(138, 180, 255, 0.25);
+    background: rgba(138, 180, 255, 0.08);
+}
+
+.week-day-label {
+    font-size: 8px;
+    line-height: 1;
+    font-weight: 700;
     color: rgba(156, 163, 175, 0.7);
-    border-left: 3px solid rgba(138, 180, 255, 0.3);
-    min-height: 34px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+}
+
+.week-day.today .week-day-label { color: #8ab4ff; }
+
+.week-day-icon {
+    font-size: 13px;
+    line-height: 1;
+    margin: 0;
+}
+
+.week-day-high {
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 700;
+    color: white;
+    margin-top: 1px;
+}
+
+.week-day-low {
+    font-size: 8px;
+    line-height: 1;
+    color: rgba(156, 163, 175, 0.55);
+    margin-top: 1px;
+}
+
+.week-day-rain {
+    font-size: 7px;
+    color: rgba(96, 165, 250, 0.7);
+    font-weight: 600;
+    line-height: 1;
+    margin-top: 1px;
+}
+
+
+/* ============================================================
+   WEATHER INFO STRIP (alerts OR facts) — accent via pseudo-element
+   ============================================================ */
+
+.weather-info-strip {
+    margin-top: 8px;
+    position: relative;
     display: flex;
     align-items: center;
-    line-height: 1.4;
-    backdrop-filter: blur(10px);
+    gap: 8px;
+    padding: 6px 10px 6px 14px;
+    background: rgba(26, 32, 43, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    font-size: 11px;
+    color: rgba(180, 190, 205, 0.85);
+    font-weight: 500;
+    line-height: 1.25;
+    min-height: 30px;
+    transition: background 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+    animation: fadeInUp 0.5s ease both;
+    flex-shrink: 0;
+    overflow: hidden;
 }
+
+/* Colored left accent drawn as an inner pill — no corner blob */
+.weather-info-strip::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: rgba(138, 180, 255, 0.5);
+    transition: background 0.4s ease;
+}
+
+.weather-info-strip .info-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    line-height: 1;
+    display: inline-block;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", sans-serif;
+}
+
+.weather-info-strip .info-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Alert color themes */
+.weather-info-strip.alert-rain {
+    background: rgba(30, 58, 100, 0.85);
+    border-color: rgba(96, 165, 250, 0.25);
+    color: rgba(191, 219, 254, 1);
+}
+.weather-info-strip.alert-rain::before { background: rgba(96, 165, 250, 0.9); }
+
+.weather-info-strip.alert-storm {
+    background: rgba(60, 40, 100, 0.85);
+    border-color: rgba(139, 92, 246, 0.25);
+    color: rgba(221, 214, 254, 1);
+}
+.weather-info-strip.alert-storm::before { background: rgba(167, 139, 250, 0.9); }
+
+.weather-info-strip.alert-heat {
+    background: rgba(100, 50, 20, 0.85);
+    border-color: rgba(251, 146, 60, 0.25);
+    color: rgba(254, 215, 170, 1);
+}
+.weather-info-strip.alert-heat::before { background: rgba(251, 146, 60, 0.9); }
+
+.weather-info-strip.alert-cold {
+    background: rgba(30, 60, 100, 0.85);
+    border-color: rgba(147, 197, 253, 0.25);
+    color: rgba(219, 234, 254, 1);
+}
+.weather-info-strip.alert-cold::before { background: rgba(147, 197, 253, 0.9); }
+
+.weather-info-strip.alert-snow {
+    background: rgba(60, 70, 85, 0.85);
+    border-color: rgba(226, 232, 240, 0.25);
+    color: rgba(241, 245, 249, 1);
+}
+.weather-info-strip.alert-snow::before { background: rgba(226, 232, 240, 0.9); }
 
 
 /* ============================================================
@@ -1199,7 +1374,7 @@ body.dimmed .card.news-card {
    CONSOLE
    ============================================================ */
 
-.log-card { overflow: hidden; background: rgba(8, 11, 16, 0.8); }
+.log-card { overflow: hidden; background: rgba(8, 11, 16, 0.85); }
 .log-card h2 {
     color: #4ade80;
     font-family: 'Courier New', monospace;
@@ -1673,7 +1848,7 @@ body.dimmed .card.news-card {
 <main class="grid">
 
 <!-- TASKS / GROCERY -->
-<section class="card tasks-card">
+<section class="card tasks-card task-card">
 <div class="tasks-header">
     <h2>📋 TASKS</h2>
     <div class="tasks-header-right">
@@ -1769,7 +1944,13 @@ body.dimmed .card.news-card {
     <div class="weather-detail">WIND<strong id="weather-wind">-- km/h</strong></div>
     <div class="weather-detail">RAIN<strong id="weather-rain">--%</strong></div>
 </div>
-<div class="weather-fact" id="weather-fact">💡 Loading weather facts...</div>
+<div class="week-strip" id="week-strip">
+    <div class="week-strip-loading">Loading forecast…</div>
+</div>
+<div class="weather-info-strip" id="weather-info-strip">
+    <span class="info-icon">💡</span>
+    <span class="info-text">Loading…</span>
+</div>
 </section>
 
 <!-- ENTERTAINMENT -->
@@ -2041,11 +2222,16 @@ setInterval(checkWindDown, 30000);
 
 async function checkRainAlert() {
     try {
+        // Quiet hours: no audio alerts between 22:00 and 07:00
+        const h = new Date().getHours();
+        if (h >= 22 || h < 7) return;
+
         const r = await fetch('/api/weather/alert');
         const d = await r.json();
         if (d.alert) speak(d.alert, { rate: 0.95 });
     } catch(e) {}
 }
+
 setTimeout(checkRainAlert, 15000);
 setInterval(checkRainAlert, 600000);
 
@@ -2119,11 +2305,11 @@ function updateTimerDisplay() {
 
 
 /* ============================================================
-   IDLE DIM (isolated — news card stays bright)
+   IDLE DIM (isolated — tasks + news stay bright)
    ============================================================ */
 
 let idleTimer = null;
-const IDLE_MS = 5 * 60 * 1000;
+const IDLE_MS = 3 * 60 * 1000;
 
 function resetIdle() {
     const o = document.getElementById('dimOverlay');
@@ -3142,20 +3328,6 @@ document.getElementById("event-form").addEventListener("submit", async event => 
    WEATHER
    ============================================================ */
 
-const weatherFacts = {
-    sunny: ["☀️ The sun is about 93 million miles away!", "☀️ A sunny day boosts vitamin D.", "☀️ Sunlight takes 8 minutes to reach Earth.", "☀️ The sun is actually white, not yellow!"],
-    rainy: ["🌧️ Raindrops fall at 7-18 mph.", "🌧️ The wettest place gets 12m of rain per year.", "🌧️ One inch of rain = 10 inches of snow."],
-    cloudy: ["☁️ Clouds weigh ~1.1 million pounds.", "☁️ There are 10 main types of clouds.", "☁️ Fog is just a cloud that touches the ground."],
-    stormy: ["⚡ Lightning is 5x hotter than the sun's surface!", "⚡ Lightning strikes Earth 100 times/second."],
-    snowy: ["❄️ No two snowflakes are exactly alike.", "❄️ The largest recorded snowflake was 15 inches wide."],
-    foggy: ["🌫️ Fog is a cloud that touches the ground.", "🌫️ San Francisco has 200+ foggy days per year."]
-};
-
-function updateWeatherFact(weatherType) {
-    const facts = weatherFacts[weatherType] || weatherFacts.sunny;
-    document.getElementById('weather-fact').textContent = '💡 ' + facts[Math.floor(Math.random() * facts.length)];
-}
-
 function updateWeatherBackground(code, isDay) {
     const card = document.getElementById('weatherCard');
     const icon = document.getElementById('weather-icon');
@@ -3170,7 +3342,6 @@ function updateWeatherBackground(code, isDay) {
     else if (code >= 600 && code < 700) { type = 'snowy'; iconClass = 'cloudy'; }
     card.classList.add(type);
     icon.classList.add(iconClass);
-    updateWeatherFact(type);
     if (!isDay) card.classList.add('night');
 }
 
@@ -3183,6 +3354,87 @@ function updateTempBar(temp) {
         label.textContent = temp + "°C";
     }
 }
+
+
+/* ============================================================
+   WEATHER INFO STRIP — alerts when present, facts otherwise
+   ============================================================ */
+
+const weatherFacts = {
+    sunny: [
+        "The sun is about 93 million miles away",
+        "Sunlight takes 8 minutes to reach Earth",
+        "A sunny day boosts your vitamin D",
+        "The sun is actually white, not yellow"
+    ],
+    rainy: [
+        "Raindrops fall at 7–18 mph",
+        "1 inch of rain equals 10 inches of snow",
+        "The wettest place gets 12m of rain per year"
+    ],
+    cloudy: [
+        "Clouds weigh about 1.1 million pounds",
+        "There are 10 main types of clouds",
+        "Fog is just a cloud that touches the ground"
+    ],
+    stormy: [
+        "Lightning is 5x hotter than the sun's surface",
+        "Lightning strikes Earth 100 times per second"
+    ],
+    snowy: [
+        "No two snowflakes are exactly alike",
+        "The largest recorded snowflake was 15 inches wide"
+    ],
+    foggy: [
+        "Fog is a cloud that touches the ground",
+        "San Francisco has 200+ foggy days per year"
+    ]
+};
+
+function pickWeatherType(code) {
+    if (code === 800) return 'sunny';
+    if (code >= 801 && code <= 804) return 'cloudy';
+    if (code >= 700 && code < 800) return 'foggy';
+    if ((code >= 500 && code < 600) || (code >= 300 && code < 400)) return 'rainy';
+    if (code >= 200 && code < 300) return 'stormy';
+    if (code >= 600 && code < 700) return 'snowy';
+    return 'sunny';
+}
+
+function updateWeatherInfoStrip(alerts, weatherCode) {
+    const strip = document.getElementById('weather-info-strip');
+    if (!strip) return;
+
+    const iconEl = strip.querySelector('.info-icon');
+    const textEl = strip.querySelector('.info-text');
+
+    // Reset theme classes
+    strip.className = 'weather-info-strip';
+
+    // Priority 1: show alerts
+    if (alerts && alerts.length) {
+        const alert = alerts[0];
+        iconEl.textContent = alert.icon;
+        textEl.textContent = alert.text;
+
+        if (alert.icon === '☔' || alert.icon === '🌧️') strip.classList.add('alert-rain');
+        else if (alert.icon === '⛈️') strip.classList.add('alert-storm');
+        else if (alert.icon === '❄️') strip.classList.add('alert-snow');
+        else if (alert.icon === '🥵') strip.classList.add('alert-heat');
+        else if (alert.icon === '🧥') strip.classList.add('alert-cold');
+
+        return;
+    }
+
+    // Priority 2: fall back to a fact
+    const type = pickWeatherType(weatherCode);
+    const facts = weatherFacts[type] || weatherFacts.sunny;
+    const fact = facts[Math.floor(Math.random() * facts.length)];
+
+    iconEl.textContent = '💡';
+    textEl.textContent = fact;
+}
+
 
 async function loadWeather() {
     try {
@@ -3201,8 +3453,53 @@ async function loadWeather() {
         document.getElementById("weather-rain").textContent = data.rain_probability + "%";
         updateWeatherBackground(data.weather_code, data.is_day !== false);
         updateTempBar(data.temperature);
+        updateWeatherInfoStrip(data.alerts || [], data.weather_code);
     } catch (error) {
         document.getElementById("weather-condition").textContent = "Weather unavailable";
+    }
+}
+
+
+/* ============================================================
+   WEEK-AHEAD FORECAST
+   ============================================================ */
+
+async function loadWeekWeather() {
+    const container = document.getElementById('week-strip');
+    if (!container) return;
+
+    try {
+        const response = await fetch("/api/weather/week");
+        const data = await response.json();
+
+        if (!data.success || !data.days || !data.days.length) {
+            container.innerHTML = `<div class="week-strip-loading">Forecast unavailable</div>`;
+            return;
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+
+        container.innerHTML = "";
+        data.days.forEach(day => {
+            const cell = document.createElement("div");
+            cell.className = "week-day";
+            if (day.date === today) cell.classList.add("today");
+
+            cell.innerHTML = `
+                <div class="week-day-label">${day.day}</div>
+                <div class="week-day-icon">${day.icon}</div>
+                <div class="week-day-high">${day.high}°</div>
+                <div class="week-day-low">${day.low}°</div>
+                ${day.rain >= 30 ? `<div class="week-day-rain">💧${day.rain}%</div>` : ''}
+            `;
+
+            cell.title = `${day.day} — High ${day.high}°C, Low ${day.low}°C${day.rain >= 30 ? `, ${day.rain}% chance of rain` : ''}`;
+
+            container.appendChild(cell);
+        });
+    } catch (error) {
+        console.error("Week weather error:", error);
+        container.innerHTML = `<div class="week-strip-loading">Forecast unavailable</div>`;
     }
 }
 
@@ -3581,6 +3878,7 @@ loadTasks();
 loadGrocery();
 loadCalendar();
 loadWeather();
+loadWeekWeather();
 loadNews();
 loadLogs();
 
@@ -3588,6 +3886,7 @@ setInterval(loadTasks, 15000);
 setInterval(loadGrocery, 15000);
 setInterval(loadCalendar, 30000);
 setInterval(loadWeather, 600000);
+setInterval(loadWeekWeather, 1800000);
 setInterval(loadNews, 120000);
 setInterval(loadLogs, 30000);
 
