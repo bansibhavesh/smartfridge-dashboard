@@ -73,10 +73,7 @@ html, body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-::selection {
-    background: rgba(120, 165, 255, 0.3);
-    color: white;
-}
+::selection { background: rgba(120, 165, 255, 0.3); color: white; }
 
 button:focus-visible,
 input:focus-visible,
@@ -101,10 +98,6 @@ select:focus-visible {
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
-}
-@keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(120, 165, 255, 0.1); }
-    50% { box-shadow: 0 0 40px rgba(120, 165, 255, 0.2); }
 }
 @keyframes slideInLeft {
     from { opacity: 0; transform: translateX(-40px) scale(0.95); }
@@ -180,6 +173,30 @@ select:focus-visible {
     60% { transform: scale(1.08); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
 }
+@keyframes todayPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 22px rgba(120, 165, 255, 0.25),
+            0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 0 32px rgba(120, 165, 255, 0.45),
+            0 2px 12px rgba(0, 0, 0, 0.25);
+    }
+}
+@keyframes updateToastSlide {
+    from { opacity: 0; transform: translate(-50%, -20px) scale(0.9); }
+    to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes updateToastProgress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+@keyframes updateToastSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
 
 /* ============================================================
@@ -224,7 +241,7 @@ select:focus-visible {
 
 
 /* ============================================================
-   AMBIENT SPOTLIGHT — weather-aware static glow
+   AMBIENT SPOTLIGHT — weather-aware
    ============================================================ */
 
 .spotlight {
@@ -691,7 +708,66 @@ select:focus-visible {
 
 
 /* ============================================================
-   ISOLATED DIMMING — news + tasks punch through
+   CARD HEADER ROW
+   ============================================================ */
+
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+}
+
+.card-header-row h2 { margin: 0; }
+
+.card-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-1);
+    color: var(--text-3);
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s var(--ease-spring);
+}
+
+.card-icon-btn:hover {
+    background: rgba(120, 165, 255, 0.10);
+    border-color: var(--border-accent);
+    color: var(--text-1);
+    transform: rotate(180deg);
+}
+
+.card-header-dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-header-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    transition: all 0.3s var(--ease-spring);
+}
+
+.card-header-dot.active {
+    width: 20px;
+    border-radius: 6px;
+    background: var(--accent-blue);
+    box-shadow: 0 0 12px rgba(120, 165, 255, 0.5);
+}
+
+
+/* ============================================================
+   ISOLATED DIMMING
    ============================================================ */
 
 .card.news-card,
@@ -718,11 +794,7 @@ body.dimmed .card.task-card {
    WEATHER
    ============================================================ */
 
-.weather-card {
-    position: relative;
-    overflow: hidden;
-    padding-bottom: 12px;
-}
+.weather-card { position: relative; overflow: hidden; padding-bottom: 12px; }
 
 .weather-card::before {
     content: '';
@@ -869,7 +941,7 @@ body.dimmed .card.task-card {
 
 
 /* ============================================================
-   WEEK-AHEAD
+   WEEK-AHEAD WEATHER STRIP
    ============================================================ */
 
 .week-strip {
@@ -1196,7 +1268,6 @@ body.dimmed .card.task-card {
     font-weight: 600;
 }
 
-/* Streak counter */
 .streak-badge {
     display: inline-flex;
     align-items: center;
@@ -1464,6 +1535,8 @@ body.dimmed .card.task-card {
    PULL-TO-REFRESH INDICATOR
    ============================================================ */
 
+.task-card { position: relative; }
+
 .ptr-indicator {
     position: absolute;
     top: 0;
@@ -1486,20 +1559,13 @@ body.dimmed .card.task-card {
     box-shadow: 0 4px 16px rgba(120, 165, 255, 0.4);
 }
 
-.ptr-indicator.visible {
-    opacity: 1;
-}
-
-.ptr-indicator.spin {
-    animation: ptrSpin 0.8s linear infinite;
-}
+.ptr-indicator.visible { opacity: 1; }
+.ptr-indicator.spin { animation: ptrSpin 0.8s linear infinite; }
 
 @keyframes ptrSpin {
     from { transform: translate(-50%, 20px) rotate(0deg); }
     to { transform: translate(-50%, 20px) rotate(360deg); }
 }
-
-.task-card { position: relative; }
 
 
 /* ============================================================
@@ -1537,18 +1603,39 @@ body.dimmed .card.task-card {
     overflow: hidden;
 }
 
-.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.calendar-month {
-    font-size: clamp(16px, 1.5vw, 22px);
+.calendar-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.calendar-month-block {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    letter-spacing: -1px;
+}
+
+.calendar-month-name {
+    font-size: clamp(20px, 2vw, 28px);
     font-weight: 700;
     color: var(--text-1);
-    letter-spacing: -0.8px;
 }
+
+.calendar-month-year {
+    font-size: clamp(13px, 1.2vw, 16px);
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: 0;
+}
+
 .calendar-nav { display: flex; gap: 6px; }
 
 .calendar-nav button {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border: 1px solid var(--border-1);
     border-radius: var(--r-sm);
     background: rgba(255, 255, 255, 0.02);
@@ -1560,11 +1647,13 @@ body.dimmed .card.task-card {
     align-items: center;
     justify-content: center;
 }
+
 .calendar-nav button:hover {
     background: rgba(120, 165, 255, 0.10);
     border-color: var(--border-accent);
     color: var(--text-1);
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(120, 165, 255, 0.15);
 }
 
 .calendar-grid {
@@ -1588,6 +1677,10 @@ body.dimmed .card.task-card {
     text-transform: uppercase;
 }
 
+.calendar-weekday.weekend {
+    color: rgba(120, 165, 255, 0.55);
+}
+
 .calendar-day {
     position: relative;
     min-height: 0;
@@ -1608,6 +1701,13 @@ body.dimmed .card.task-card {
     justify-content: flex-start;
 }
 
+.calendar-day.weekend:not(.empty):not(.today) {
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.04) 0%,
+            rgba(120, 165, 255, 0.01) 100%);
+}
+
 .calendar-day:hover {
     border-color: rgba(120, 165, 255, 0.2);
     box-shadow:
@@ -1616,23 +1716,35 @@ body.dimmed .card.task-card {
     transform: scale(1.06);
     z-index: 1;
 }
+
 .calendar-day.empty { background: transparent; cursor: default; border: none; box-shadow: none; }
+
 .calendar-day.today {
     background:
         linear-gradient(180deg,
-            rgba(120, 165, 255, 0.15) 0%,
-            rgba(120, 165, 255, 0.05) 100%);
-    border-color: rgba(120, 165, 255, 0.5);
-    box-shadow:
-        0 0 20px rgba(120, 165, 255, 0.2),
-        0 2px 8px rgba(0, 0, 0, 0.2);
+            rgba(120, 165, 255, 0.20) 0%,
+            rgba(120, 165, 255, 0.08) 100%);
+    border-color: rgba(120, 165, 255, 0.55);
+    animation: todayPulse 3s ease-in-out infinite;
 }
+
 .calendar-day.has-event {
     background:
         linear-gradient(180deg,
-            rgba(120, 165, 255, 0.12) 0%,
-            rgba(120, 165, 255, 0.04) 100%);
-    border-color: rgba(120, 165, 255, 0.28);
+            rgba(120, 165, 255, 0.10) 0%,
+            rgba(120, 165, 255, 0.03) 100%);
+    border-color: rgba(120, 165, 255, 0.22);
+}
+
+.calendar-day.has-event.weekend {
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.14) 0%,
+            rgba(120, 165, 255, 0.05) 100%);
+}
+
+.calendar-day.has-event .calendar-day-number {
+    color: rgba(220, 230, 245, 0.95);
 }
 
 .calendar-day-number {
@@ -1643,70 +1755,264 @@ body.dimmed .card.task-card {
 }
 
 .calendar-day.today .calendar-day-number {
-    color: var(--accent-blue);
+    color: #b8d0ff;
     font-weight: 700;
+}
+
+/* Emoji badge in day cell */
+.calendar-day-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 3px;
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(120, 165, 255, 0.8);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(120, 165, 255, 0.3);
+    transition: all 0.25s var(--ease-spring);
+}
+
+.calendar-day.has-event:hover .calendar-day-badge {
+    color: #b8d0ff;
+    text-shadow: 0 0 10px rgba(120, 165, 255, 0.6);
+    transform: scale(1.15);
+}
+
+.calendar-day.today .calendar-day-badge {
+    color: #b8d0ff;
+    text-shadow: 0 0 8px rgba(120, 165, 255, 0.5);
+}
+
+
+/* ============================================================
+   UPCOMING EVENTS (timeline style)
+   ============================================================ */
+
+.events-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .events-title {
-    font-size: clamp(15px, 1.5vw, 20px);
+    font-size: clamp(16px, 1.5vw, 20px);
     font-weight: 700;
-    margin-bottom: 10px;
     color: var(--text-1);
-    letter-spacing: -0.3px;
-    animation: fadeIn 0.5s ease;
+    letter-spacing: -0.4px;
+    margin: 0;
 }
-.events-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+
+.events-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 100px;
+    background: rgba(120, 165, 255, 0.12);
+    border: 1px solid rgba(120, 165, 255, 0.25);
+    color: var(--accent-blue);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+}
+
+.events-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding-right: 4px;
+}
 .events-list::-webkit-scrollbar { display: none; }
 
+.events-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+}
+
 .event-item {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid transparent;
-    border-radius: 12px;
-    padding: 11px 12px;
-    margin-bottom: 6px;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0 14px 0;
     transition: all 0.3s var(--ease-spring);
     animation: slideInRight 0.45s var(--ease-spring) both;
 }
-.event-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateX(-4px);
-    border-color: var(--border-2);
+
+.event-item:hover .event-body {
+    background: rgba(120, 165, 255, 0.05);
+    border-color: rgba(120, 165, 255, 0.18);
+    transform: translateX(2px);
+}
+
+.event-item:hover .event-dot {
+    transform: scale(1.4);
+    box-shadow: 0 0 14px rgba(120, 165, 255, 0.8);
+}
+
+.event-rail {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 6px;
+    width: 16px;
+    align-self: stretch;
+}
+
+.event-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #86b0ff, #6a8fdd);
+    box-shadow:
+        0 0 10px rgba(120, 165, 255, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s var(--ease-spring);
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.event-line {
+    flex: 1;
+    width: 1px;
+    background: linear-gradient(180deg,
+        rgba(120, 165, 255, 0.3),
+        rgba(120, 165, 255, 0.05));
+    margin-top: 4px;
+}
+
+.event-body {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 10px 12px;
+    transition: all 0.3s var(--ease-spring);
+}
+
+.event-time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+}
+
+.event-date-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(120, 165, 255, 0.12);
+    border: 1px solid rgba(120, 165, 255, 0.2);
+    color: var(--accent-blue);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.event-time-text {
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
 }
 
 .event-item-title {
-    font-size: clamp(11px, 1vw, 14px);
+    font-size: clamp(12px, 1.05vw, 14px);
     font-weight: 600;
-    white-space: nowrap;
+    color: var(--text-1);
+    line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--text-1);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
-.event-item-time {
-    color: var(--accent-blue);
+
+.event-delete-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(107, 114, 128, 0.4);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-spring);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    margin-top: 6px;
+}
+
+.event-item:hover .event-delete-btn { opacity: 1; }
+
+.event-delete-btn:hover {
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: var(--accent-red);
+    transform: scale(1.08);
+}
+
+.events-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-3);
+    font-size: 12px;
+    text-align: center;
+    padding: 30px 20px;
+    animation: fadeIn 0.6s ease;
+}
+
+.events-empty-icon {
+    font-size: 40px;
+    opacity: 0.5;
+    animation: float 5s ease-in-out infinite;
+}
+
+.events-empty-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: -0.2px;
+}
+
+.events-empty-hint {
     font-size: 10px;
-    margin-top: 4px;
-    font-weight: 700;
+    color: var(--text-3);
+    opacity: 0.7;
     letter-spacing: 0.4px;
     text-transform: uppercase;
-    opacity: 0.85;
+    font-weight: 600;
 }
-.event-empty { color: var(--text-3); text-align: center; padding: 30px 10px; font-size: 11px; }
-
-.calendar-dots { display: flex; justify-content: center; align-items: center; gap: 8px; height: 16px; flex-shrink: 0; cursor: pointer; margin-top: 8px; }
-
-.calendar-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    transition: all 0.4s var(--ease-spring);
-    cursor: pointer;
-}
-.calendar-dot.active { width: 20px; border-radius: 6px; background: var(--accent-blue); box-shadow: 0 0 15px rgba(120, 165, 255, 0.4); }
 
 .calendar-actions { display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; flex-wrap: wrap; }
 
 .calendar-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-1);
     color: var(--text-2);
@@ -2178,23 +2484,59 @@ body.dimmed .card.task-card {
    NEWS
    ============================================================ */
 
-#news-container { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+#news-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
 #news-container::-webkit-scrollbar { display: none; }
 
+.news-source-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-3);
+    font-size: 9px;
+    letter-spacing: 0.6px;
+    opacity: 0.75;
+    flex-shrink: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 0 4px 12px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 12px;
+}
+
 .news-item {
+    position: relative;
     background:
         linear-gradient(180deg,
-            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.025) 0%,
             rgba(255, 255, 255, 0.005) 100%);
-    padding: 14px 16px;
-    margin-bottom: 6px;
+    padding: 14px 16px 14px 18px;
+    margin-bottom: 8px;
     border-radius: 14px;
     font-size: clamp(11px, 1vw, 14px);
-    transition: all 0.3s var(--ease-spring);
+    transition: all 0.35s var(--ease-spring);
     animation: slideInLeft 0.45s var(--ease-spring) both;
     border: 1px solid rgba(255, 255, 255, 0.04);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
 }
+
+.news-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--news-accent, rgba(120, 165, 255, 0.6));
+    transition: all 0.3s var(--ease-spring);
+}
+
 .news-item:hover {
     border-color: rgba(120, 165, 255, 0.18);
     box-shadow:
@@ -2207,16 +2549,100 @@ body.dimmed .card.task-card {
     transform: translateX(4px);
 }
 
+.news-item:hover::before {
+    top: 8px;
+    bottom: 8px;
+    width: 4px;
+}
+
+.news-item.featured {
+    padding: 16px 18px 16px 20px;
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.06) 0%,
+            rgba(120, 165, 255, 0.02) 100%);
+    border-color: rgba(120, 165, 255, 0.15);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.news-item.featured::before {
+    top: 16px;
+    bottom: 16px;
+    width: 4px;
+    box-shadow: 0 0 12px var(--news-accent, rgba(120, 165, 255, 0.6));
+}
+
+.news-item.featured .news-title {
+    font-size: clamp(13px, 1.15vw, 16px);
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
 .news-source {
-    display: block;
-    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-3);
     font-size: 9px;
     font-weight: 700;
-    margin-bottom: 5px;
-    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    opacity: 0.85;
 }
+
+.news-cat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.news-cat-badge.cat-india {
+    background: rgba(251, 146, 60, 0.12);
+    border-color: rgba(251, 146, 60, 0.28);
+    color: #fed7aa;
+}
+
+.news-cat-badge.cat-world {
+    background: rgba(96, 165, 250, 0.12);
+    border-color: rgba(96, 165, 250, 0.28);
+    color: #bfdbfe;
+}
+
+.news-cat-badge.cat-tech {
+    background: rgba(167, 139, 250, 0.12);
+    border-color: rgba(167, 139, 250, 0.28);
+    color: #ddd6fe;
+}
+
+.news-cat-badge.cat-aviation {
+    background: rgba(103, 232, 249, 0.12);
+    border-color: rgba(103, 232, 249, 0.28);
+    color: #a5f3fc;
+}
+
+.news-source-name {
+    color: var(--text-3);
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+.news-time {
+    margin-left: auto;
+    font-size: 9px;
+    color: var(--text-3);
+    font-weight: 600;
+    opacity: 0.7;
+}
+
 .news-title {
     font-weight: 600;
     letter-spacing: -0.2px;
@@ -2224,19 +2650,24 @@ body.dimmed .card.task-card {
     margin-top: 2px;
     color: var(--text-1);
 }
-.news-description { color: var(--text-2); font-size: 11px; margin-top: 5px; line-height: 1.5; }
-.news-empty { color: var(--text-3); text-align: center; padding: 30px 10px; font-size: 11px; }
 
-.news-source-info {
+.news-description {
+    color: var(--text-2);
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-empty {
     color: var(--text-3);
-    font-size: 9px;
-    text-align: right;
-    margin-bottom: 8px;
-    letter-spacing: 0.6px;
-    opacity: 0.7;
-    flex-shrink: 0;
-    font-weight: 600;
-    text-transform: uppercase;
+    text-align: center;
+    padding: 30px 10px;
+    font-size: 11px;
 }
 
 
@@ -2341,17 +2772,6 @@ body.dimmed .card.task-card {
         0 8px 24px rgba(120, 165, 255, 0.5),
         0 2px 6px rgba(0, 0, 0, 0.35);
 }
-.add-event-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.5s ease;
-}
-.add-event-button:hover::before { left: 100%; }
 
 .event-status { min-height: 18px; color: var(--text-3); font-size: 11px; text-align: center; }
 
@@ -2366,9 +2786,6 @@ body.dimmed .card.task-card {
     max-height: 85vh;
     overflow-y: auto;
 }
-.scheduled-modal .modal-box::-webkit-scrollbar { width: 4px; }
-.scheduled-modal .modal-box::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
-.scheduled-modal .modal-box::-webkit-scrollbar-thumb { background: rgba(120, 165, 255, 0.2); border-radius: 4px; }
 
 .scheduled-task-item {
     display: flex;
@@ -2600,6 +3017,91 @@ body.dimmed .card.task-card {
 
 
 /* ============================================================
+   UPDATE TOAST (auto-refresh on redeploy)
+   ============================================================ */
+
+#updateToast {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translate(-50%, -20px);
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px 12px 16px;
+    border-radius: 100px;
+    background:
+        linear-gradient(180deg,
+            rgba(38, 48, 66, 0.98) 0%,
+            rgba(18, 24, 34, 0.98) 100%);
+    border: 1px solid rgba(120, 165, 255, 0.35);
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.06) inset,
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(120, 165, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 99994;
+    overflow: hidden;
+    animation: updateToastSlide 0.4s var(--ease-spring) both;
+}
+
+#updateToast.visible {
+    display: inline-flex;
+}
+
+#updateToast .update-spinner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(120, 165, 255, 0.2);
+    border-top-color: var(--accent-blue);
+    animation: updateToastSpin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+#updateToast .update-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.2;
+}
+
+#updateToast .update-title {
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#updateToast .update-sub {
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+#updateToast .update-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg,
+        var(--accent-blue),
+        rgba(120, 165, 255, 0.4));
+    animation: updateToastProgress 3.2s linear forwards;
+    border-radius: 0 0 100px 100px;
+    box-shadow: 0 0 12px rgba(120, 165, 255, 0.5);
+}
+
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 
@@ -2623,16 +3125,9 @@ body.dimmed .card.task-card {
 
 @media (max-width: 900px) {
     .week-day-low,
-    .week-day-rain {
-        display: none;
-    }
-    .week-day-high {
-        font-size: 11px;
-        margin-top: 3px;
-    }
-    .week-day-icon {
-        font-size: 13px;
-    }
+    .week-day-rain { display: none; }
+    .week-day-high { font-size: 11px; margin-top: 3px; }
+    .week-day-icon { font-size: 13px; }
 }
 
 @media (max-height: 800px) {
@@ -2656,6 +3151,7 @@ body.dimmed .card.task-card {
     .greeting-text { font-size: clamp(14px, 2.5vw, 18px); }
     .greeting-meta { font-size: clamp(8px, 1.5vw, 10px); padding-left: 8px; }
     #timerFab { bottom: 16px; right: 16px; width: 60px; height: 60px; font-size: 24px; }
+    #updateToast { top: 76px; font-size: 12px; padding: 10px 16px 10px 14px; }
 }
 
 </style>
@@ -2761,31 +3257,45 @@ body.dimmed .card.task-card {
 
 <!-- CALENDAR -->
 <section class="card calendar-card">
-<h2>📅 CALENDAR</h2>
+<div class="card-header-row">
+    <h2>📅 CALENDAR</h2>
+    <div class="card-header-dots" id="calendarHeaderDots">
+        <span class="card-header-dot active" data-page="0" onclick="setCalendarPage(0)"></span>
+        <span class="card-header-dot" data-page="1" onclick="setCalendarPage(1)"></span>
+    </div>
+</div>
+
 <div class="calendar-pages" id="calendar-pages">
     <div class="calendar-track" id="calendar-track">
+        <!-- MONTH VIEW -->
         <div class="calendar-page">
             <div class="calendar-header">
-                <div class="calendar-month" id="calendar-month"></div>
+                <div class="calendar-month-block">
+                    <span class="calendar-month-name" id="calendar-month-name">September</span>
+                    <span class="calendar-month-year" id="calendar-month-year">2026</span>
+                </div>
                 <div class="calendar-nav">
-                    <button onclick="changeMonth(-1)">‹</button>
-                    <button onclick="changeMonth(1)">›</button>
+                    <button onclick="changeMonth(-1)" title="Previous month">‹</button>
+                    <button onclick="changeMonth(1)" title="Next month">›</button>
                 </div>
             </div>
             <div class="calendar-grid" id="calendar-grid"></div>
         </div>
+
+        <!-- UPCOMING VIEW -->
         <div class="calendar-page">
-            <div class="events-title">Upcoming Events</div>
+            <div class="events-header">
+                <div class="events-title">Upcoming</div>
+                <div class="events-count" id="eventsCount">0</div>
+            </div>
             <div class="events-list" id="events-list"></div>
             <div class="calendar-actions">
-                <button class="calendar-action-btn danger" onclick="deletePastEvents()">🗑️ Delete Past Events</button>
+                <button class="calendar-action-btn danger" onclick="deletePastEvents()">
+                    <span>🗑️</span> Clean past events
+                </button>
             </div>
         </div>
     </div>
-</div>
-<div class="calendar-dots">
-    <div class="calendar-dot active" id="dot-0" data-page="0" onclick="setCalendarPage(0)"></div>
-    <div class="calendar-dot" id="dot-1" data-page="1" onclick="setCalendarPage(1)"></div>
 </div>
 </section>
 
@@ -2901,12 +3411,12 @@ body.dimmed .card.task-card {
 
 <!-- NEWS -->
 <section class="card news-card">
-<h2 style="display: flex; justify-content: space-between; align-items: center;">
-    <span>📰 NEWS</span>
-    <button onclick="refreshNews()" style="background: transparent; border: none; color: rgba(107,114,128,0.5); cursor: pointer; font-size: 14px; padding: 8px; border-radius: 6px;" title="Refresh news">🔄</button>
-</h2>
+<div class="card-header-row">
+    <h2>📰 NEWS</h2>
+    <button class="card-icon-btn" onclick="refreshNews()" title="Refresh news">🔄</button>
+</div>
 <div id="news-container">
-    <div class="news-item" style="text-align: center; color: rgba(107, 114, 128, 0.6);">
+    <div class="news-item" style="text-align: center; color: var(--text-3);">
         <span class="news-source">Loading...</span>
         Fetching latest news...
     </div>
@@ -2920,6 +3430,14 @@ body.dimmed .card.task-card {
 <div id="undoHost" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99996;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;"></div>
 <div id="confettiLayer"></div>
 <div id="screenFlash"></div>
+<div id="updateToast">
+    <div class="update-spinner"></div>
+    <div class="update-text">
+        <span class="update-title">Server updated</span>
+        <span class="update-sub">Refreshing…</span>
+    </div>
+    <div class="update-progress"></div>
+</div>
 <button id="timerFab" onclick="handleTimerClick()" title="Kitchen Timer">⏱</button>
 
 <!-- EVENT MODAL -->
@@ -3414,14 +3932,160 @@ function showUndoToast(message, onUndo, ttl = 5000) {
    FULLSCREEN
    ============================================================ */
 
+function tryEnterFullscreen() {
+    if (document.fullscreenElement) return;
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+    } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+    }
+}
+
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+        tryEnterFullscreen();
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     }
 }
 document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+// Auto fullscreen on first user gesture (once per session)
+(function autoFullscreenOnFirstInteraction() {
+    if (sessionStorage.getItem("fridge_auto_fs_attempted") === "1") return;
+    const once = () => {
+        sessionStorage.setItem("fridge_auto_fs_attempted", "1");
+        tryEnterFullscreen();
+    };
+    document.addEventListener("click", once, { once: true });
+    document.addEventListener("touchstart", once, { once: true });
+    document.addEventListener("keydown", once, { once: true });
+})();
+
+// Restore fullscreen after a reload if we were fullscreen before
+(function restoreFullscreenAfterReload() {
+    if (sessionStorage.getItem("fridge_was_fullscreen") !== "1") return;
+    const once = () => {
+        tryEnterFullscreen();
+    };
+    document.addEventListener("click", once, { once: true });
+    document.addEventListener("touchstart", once, { once: true });
+    document.addEventListener("keydown", once, { once: true });
+})();
+
+// Track fullscreen state so we can restore it after reloads
+document.addEventListener("fullscreenchange", () => {
+    sessionStorage.setItem("fridge_was_fullscreen", document.fullscreenElement ? "1" : "0");
+});
+document.addEventListener("webkitfullscreenchange", () => {
+    sessionStorage.setItem("fridge_was_fullscreen", document.webkitFullscreenElement ? "1" : "0");
+});
+
+
+/* ============================================================
+   AUTO-REFRESH ON SERVER RESTART / REDEPLOY
+   ============================================================ */
+
+const DEPLOY_CHECK_INTERVAL_MS = 10000;
+const DEPLOY_ID_KEY = "fridge_deploy_id_v1";
+const SESSION_RELOADED_AT_KEY = "fridge_reloaded_at";
+
+let _lastDeployId = null;
+let _healthFailures = 0;
+const HEALTH_FAILURES_BEFORE_RECONNECT = 3;
+let _reloadToastShown = false;
+
+function showUpdateToast(reason) {
+    if (_reloadToastShown) return;
+    _reloadToastShown = true;
+
+    const toast = document.getElementById("updateToast");
+    if (!toast) return;
+    toast.classList.add("visible");
+
+    // Log it
+    pushClientLog(`🆕 Server updated — refreshing soon`, 'client');
+}
+
+function triggerAutoReload(reason) {
+    // Throttle: don't reload more than once every 20 seconds
+    const last = Number(sessionStorage.getItem(SESSION_RELOADED_AT_KEY) || "0");
+    const now = Date.now();
+    if (now - last < 20000) {
+        console.warn("Reload throttled — recent reload");
+        return;
+    }
+    sessionStorage.setItem(SESSION_RELOADED_AT_KEY, String(now));
+
+    // Show the toast first (gives user ~2.5s of "reloading…" before it happens)
+    showUpdateToast(reason);
+    pushClientLog(`🔁 Auto-reloading (${reason})`, 'client');
+
+    // Delay the reload so the toast animation is visible
+    setTimeout(() => {
+        // Save current fullscreen state so the next load can restore it
+        sessionStorage.setItem("fridge_was_fullscreen", document.fullscreenElement ? "1" : "0");
+        window.location.reload();
+    }, 2600);
+}
+
+async function checkServerHealth() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        const res = await fetch("/api/health?_=" + Date.now(), {
+            signal: controller.signal,
+            cache: "no-store"
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error("health not ok");
+        const data = await res.json();
+
+        // If server doesn't expose deploy_id, silently skip auto-reload
+        if (!data || !data.deploy_id) {
+            return;
+        }
+
+        const currentDeployId = String(data.deploy_id);
+
+        if (_lastDeployId === null) {
+            // First successful check — establish baseline
+            _lastDeployId = currentDeployId;
+            const stored = sessionStorage.getItem(DEPLOY_ID_KEY);
+            if (stored && stored !== currentDeployId) {
+                // Deploy changed while we were away
+                sessionStorage.setItem(DEPLOY_ID_KEY, currentDeployId);
+                triggerAutoReload("deploy-changed-while-away");
+                return;
+            }
+            sessionStorage.setItem(DEPLOY_ID_KEY, currentDeployId);
+            _healthFailures = 0;
+            return;
+        }
+
+        if (currentDeployId !== _lastDeployId) {
+            pushClientLog(`🔄 Deploy changed (${_lastDeployId} → ${currentDeployId})`, 'client');
+            sessionStorage.setItem(DEPLOY_ID_KEY, currentDeployId);
+            triggerAutoReload("deploy-id-changed");
+            return;
+        }
+
+        _healthFailures = 0;
+    } catch (e) {
+        _healthFailures++;
+        if (_healthFailures === HEALTH_FAILURES_BEFORE_RECONNECT) {
+            pushClientLog(`⚠️ Server unreachable (${_healthFailures} fails)`, 'client');
+        }
+    }
+}
+
+// Start polling after page settles
+setTimeout(checkServerHealth, 3000);
+setInterval(checkServerHealth, DEPLOY_CHECK_INTERVAL_MS);
 
 
 /* ============================================================
@@ -3864,7 +4528,6 @@ async function completeTask(taskId, checkbox) {
     const rect = checkbox.getBoundingClientRect();
     const wasLastTask = (allTasks.filter(t => !pendingHideTasks.has(t.id)).length === 1);
 
-    // Fire confetti + ding + streak
     fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, wasLastTask ? 60 : 22);
     playDing();
     incrementStreak();
@@ -3926,7 +4589,7 @@ document.getElementById("add-task-form").addEventListener("submit", async event 
 
 
 /* ============================================================
-   PULL-TO-REFRESH (on task list)
+   PULL-TO-REFRESH
    ============================================================ */
 
 (function setupPullToRefresh() {
@@ -4242,7 +4905,7 @@ function createModeDropdown() {
 function setCalendarPage(page) {
     calendarPage = Math.max(0, Math.min(1, page));
     document.getElementById('calendar-track').style.transform = `translateX(-${calendarPage * 50}%)`;
-    document.querySelectorAll('.calendar-dot').forEach((d, i) => d.classList.toggle('active', i === calendarPage));
+    document.querySelectorAll('.card-header-dot').forEach((d, i) => d.classList.toggle('active', i === calendarPage));
 }
 
 let calendarTouchStartX = 0;
@@ -4290,44 +4953,70 @@ function getEventDate(event) {
 
 function renderCalendar() {
     const grid = document.getElementById("calendar-grid");
-    const monthLabel = document.getElementById("calendar-month");
+    const monthNameEl = document.getElementById("calendar-month-name");
+    const monthYearEl = document.getElementById("calendar-month-year");
+
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
-    monthLabel.textContent = new Date(year, month, 1).toLocaleDateString([], { month: "long", year: "numeric" });
+
+    monthNameEl.textContent = new Date(year, month, 1).toLocaleDateString([], { month: "long" });
+    monthYearEl.textContent = year;
+
     grid.innerHTML = "";
-    ["S","M","T","W","T","F","S"].forEach(day => {
+
+    ["S","M","T","W","T","F","S"].forEach((day, idx) => {
         const el = document.createElement("div");
         el.className = "calendar-weekday";
+        if (idx === 0 || idx === 6) el.classList.add("weekend");
         el.textContent = day;
         grid.appendChild(el);
     });
+
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+
     for (let i = 0; i < firstDay; i++) {
         const empty = document.createElement("div");
         empty.className = "calendar-day empty";
         grid.appendChild(empty);
     }
+
     const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
     for (let day = 1; day <= daysInMonth; day++) {
         const cell = document.createElement("div");
         cell.className = "calendar-day";
-        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+
+        const dateObj = new Date(year, month, day);
+        const dow = dateObj.getDay();
+        if (dow === 0 || dow === 6) cell.classList.add("weekend");
+
+        const dateString = formatDateForInput(year, month, day);
+
+        if (dateString === todayStr) {
             cell.classList.add("today");
         }
-        const dateString = formatDateForInput(year, month, day);
+
         const dayEvents = calendarEvents.filter(event => getEventDate(event) === dateString);
-        if (dayEvents.length > 0) {
-            cell.classList.add("has-event");
-            const count = document.createElement("div");
-            count.style.cssText = `position:absolute;bottom:2px;right:4px;font-size:8px;color:rgba(120,165,255,0.7);font-weight:700;`;
-            count.textContent = `📌${dayEvents.length}`;
-            cell.appendChild(count);
-        }
+
         const number = document.createElement("div");
         number.className = "calendar-day-number";
         number.textContent = day;
         cell.appendChild(number);
+
+        if (dayEvents.length > 0) {
+            cell.classList.add("has-event");
+            const badge = document.createElement("div");
+            badge.className = "calendar-day-badge";
+            badge.textContent = `📌${dayEvents.length}`;
+            cell.appendChild(badge);
+        }
+
+        cell.title = dayEvents.length
+            ? `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}`
+            : `Add event for ${dateString}`;
+
         cell.onclick = () => {
             if (dayEvents.length > 0) {
                 const titles = dayEvents.map(e => `• ${e.title}`).join('\n');
@@ -4344,48 +5033,96 @@ function renderCalendar() {
 
 function renderUpcomingEvents() {
     const container = document.getElementById("events-list");
+    const countEl = document.getElementById("eventsCount");
     container.innerHTML = "";
+
     const now = new Date();
     const upcoming = calendarEvents
         .filter(e => e.start && new Date(e.start) >= now)
         .sort((a, b) => new Date(a.start) - new Date(b.start))
         .slice(0, 15);
+
+    if (countEl) countEl.textContent = upcoming.length;
+
     if (!upcoming.length) {
-        container.innerHTML = `<div class="event-empty">No upcoming events</div>`;
+        container.innerHTML = `
+            <div class="events-empty">
+                <div class="events-empty-icon">🗓️</div>
+                <div class="events-empty-title">No upcoming events</div>
+                <div class="events-empty-hint">Tap any date to add one</div>
+            </div>
+        `;
         return;
     }
+
+    const timeline = document.createElement("div");
+    timeline.className = "events-timeline";
+
     upcoming.forEach((event, index) => {
+        const start = new Date(event.start);
+
         const item = document.createElement("div");
         item.className = "event-item";
         item.style.animationDelay = `${index * 0.05}s`;
-        item.style.position = "relative";
-        item.style.paddingRight = "30px";
-        const start = new Date(event.start);
+
+        const rail = document.createElement("div");
+        rail.className = "event-rail";
+        const dot = document.createElement("div");
+        dot.className = "event-dot";
+        rail.appendChild(dot);
+        if (index < upcoming.length - 1) {
+            const line = document.createElement("div");
+            line.className = "event-line";
+            rail.appendChild(line);
+        }
+
+        const body = document.createElement("div");
+        body.className = "event-body";
+
+        const timeRow = document.createElement("div");
+        timeRow.className = "event-time-row";
+
+        const dateStr = start.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+        const timeStr = event.all_day
+            ? "All day"
+            : start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const dateBadge = document.createElement("span");
+        dateBadge.className = "event-date-badge";
+        dateBadge.textContent = dateStr;
+
+        const timeText = document.createElement("span");
+        timeText.className = "event-time-text";
+        timeText.textContent = timeStr;
+
+        timeRow.appendChild(dateBadge);
+        timeRow.appendChild(timeText);
+
         const title = document.createElement("div");
         title.className = "event-item-title";
         title.textContent = event.title;
-        const time = document.createElement("div");
-        time.className = "event-item-time";
-        if (event.all_day) {
-            time.textContent = start.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " • All day";
-        } else {
-            time.textContent = start.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + " • " + start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        }
+
+        body.appendChild(timeRow);
+        body.appendChild(title);
+
         const deleteBtn = document.createElement("button");
+        deleteBtn.className = "event-delete-btn";
         deleteBtn.textContent = "✕";
-        deleteBtn.style.cssText = `position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:rgba(107,114,128,0.5);font-size:16px;cursor:pointer;padding:8px 12px;border-radius:4px;opacity:0.4;`;
-        item.addEventListener('mouseenter', () => deleteBtn.style.opacity = '1');
-        item.addEventListener('mouseleave', () => deleteBtn.style.opacity = '0.4');
+        deleteBtn.title = "Delete event";
         deleteBtn.onclick = async (e) => {
             e.stopPropagation();
             e.preventDefault();
             if (confirm(`Delete "${event.title}"?`)) await deleteEvent(event.id);
         };
-        item.appendChild(title);
-        item.appendChild(time);
+
+        item.appendChild(rail);
+        item.appendChild(body);
         item.appendChild(deleteBtn);
-        container.appendChild(item);
+
+        timeline.appendChild(item);
     });
+
+    container.appendChild(timeline);
 }
 
 async function deleteEvent(eventId) {
@@ -4509,7 +5246,7 @@ function updateTempBar(temp) {
 
 
 /* ============================================================
-   WEATHER INFO STRIP — facts + spotlight color driver
+   WEATHER INFO STRIP
    ============================================================ */
 
 const weatherFacts = {
@@ -4560,7 +5297,6 @@ function updateWeatherInfoStrip(alerts, weatherCode) {
     const iconEl = strip.querySelector('.info-icon');
     const textEl = strip.querySelector('.info-text');
 
-    // Drive the weather-aware spotlight color
     setSpotlightWeather(alerts && alerts.length ? alerts[0] : null);
 
     const type = pickWeatherType(weatherCode);
@@ -4679,14 +5415,18 @@ function renderNews(data) {
     if (data.source) {
         const info = document.createElement("div");
         info.className = "news-source-info";
-        const updatedText = data.updated ? ` • Updated: ${new Date(data.updated).toLocaleTimeString()}` : '';
-        info.textContent = `📰 ${data.source}${updatedText}`;
+        const updatedText = data.updated
+            ? new Date(data.updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '—';
+        info.innerHTML = `<span>📡 ${data.source}</span><span>Updated ${updatedText}</span>`;
         container.appendChild(info);
     }
 
-    const categoryStyles = {
-        "india": "🇮🇳 INDIA", "world": "🌍 WORLD",
-        "technology": "💻 TECHNOLOGY", "aviation": "✈️ AVIATION"
+    const categoryMeta = {
+        "india":     { label: "India",     cls: "cat-india",    accent: "rgba(251, 146, 60, 0.7)" },
+        "world":     { label: "World",     cls: "cat-world",    accent: "rgba(96, 165, 250, 0.7)" },
+        "technology":{ label: "Tech",      cls: "cat-tech",     accent: "rgba(167, 139, 250, 0.7)" },
+        "aviation":  { label: "Aviation",  cls: "cat-aviation", accent: "rgba(103, 232, 249, 0.7)" }
     };
 
     let hasArticles = false;
@@ -4703,46 +5443,63 @@ function renderNews(data) {
         const item = items[0];
         if (!item || !item.title || item.title.length < 3) continue;
 
+        const meta = categoryMeta[category] || { label: category, cls: "", accent: "rgba(120, 165, 255, 0.6)" };
+
         const div = document.createElement("div");
         div.className = "news-item";
-        div.style.animationDelay = `${idx * 0.05}s`;
+        if (idx === 0) div.classList.add("featured");
+        div.style.setProperty('--news-accent', meta.accent);
+        div.style.animationDelay = `${idx * 0.06}s`;
 
-        const source = document.createElement("span");
+        const source = document.createElement("div");
         source.className = "news-source";
-        const catLabel = categoryStyles[category] || category.toUpperCase();
-        const sourceName = item.source?.name || "News";
-        const published = item.published ? ` • ${item.published}` : '';
-        source.textContent = `${catLabel} • ${sourceName}${published}`;
+
+        const catBadge = document.createElement("span");
+        catBadge.className = `news-cat-badge ${meta.cls}`;
+        catBadge.textContent = meta.label;
+
+        const sourceName = document.createElement("span");
+        sourceName.className = "news-source-name";
+        sourceName.textContent = item.source?.name || "News";
+
+        const time = document.createElement("span");
+        time.className = "news-time";
+        time.textContent = item.published || "";
+
+        source.appendChild(catBadge);
+        source.appendChild(sourceName);
+        if (item.published) source.appendChild(time);
 
         const title = document.createElement("div");
         title.className = "news-title";
         let cleanTitle = (item.title || "").replace(/<[^>]+>/g, '').trim();
-        if (cleanTitle.length > 90) cleanTitle = cleanTitle.substring(0, 87) + '...';
+        if (cleanTitle.length > 110) cleanTitle = cleanTitle.substring(0, 107) + '...';
         title.textContent = cleanTitle;
+
+        div.appendChild(source);
+        div.appendChild(title);
+
+        if (item.description && item.description.length > 5 && item.description !== "Read more at the source") {
+            const desc = document.createElement("div");
+            desc.className = "news-description";
+            let d = item.description.replace(/<[^>]+>/g, '').trim();
+            if (d.length > 140) d = d.substring(0, 137) + '...';
+            desc.textContent = d;
+            div.appendChild(desc);
+        }
 
         if (item.url && item.url !== "#") {
             div.style.cursor = "pointer";
             div.onclick = () => window.open(item.url, "_blank");
         }
 
-        if (item.description && item.description.length > 5 && item.description !== "Read more at the source") {
-            const desc = document.createElement("div");
-            desc.className = "news-description";
-            let d = item.description.replace(/<[^>]+>/g, '').trim();
-            if (d.length > 130) d = d.substring(0, 127) + '...';
-            desc.textContent = d;
-            div.appendChild(desc);
-        }
-
-        div.appendChild(source);
-        div.appendChild(title);
         container.appendChild(div);
         idx++;
     }
 }
 
 async function refreshNews() {
-    const btn = document.querySelector('.news-card h2 button');
+    const btn = document.querySelector('.news-card .card-icon-btn');
     if (!btn) return;
     btn.textContent = '⏳';
     btn.disabled = true;

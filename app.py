@@ -69,7 +69,7 @@ app.mount(
 )
 
 # ============================================================
-# ENVIRONMENT VARIABLES
+# ENVIRONMENT VARIABLES (must run before deploy signature)
 # ============================================================
 
 try:
@@ -78,6 +78,48 @@ try:
     print("✅ Loaded environment variables from .env file")
 except ImportError:
     print("ℹ️ python-dotenv not installed - using system environment variables")
+
+# ============================================================
+# DEPLOY SIGNATURE (used by frontend to detect restarts/redeploys)
+# ============================================================
+
+def _compute_deploy_id() -> str:
+    """
+    Return a stable string that changes whenever the app is redeployed.
+    Priority:
+      1. Render's RENDER_GIT_COMMIT env var (unique per deploy)
+      2. Docker/Heroku RENDER_BUILD_ID
+      3. Fallback: mtime of index.html + startup time
+    """
+    # 1. Render commit
+    git_commit = os.getenv("RENDER_GIT_COMMIT", "")
+    if git_commit:
+        return f"commit:{git_commit[:12]}"
+
+    # 2. Other build ids
+    for env_key in ("RENDER_BUILD_ID", "GIT_COMMIT", "SOURCE_VERSION"):
+        val = os.getenv(env_key, "")
+        if val:
+            return f"{env_key.lower()}:{val[:12]}"
+
+    # 3. Fallback: file mtime of index.html
+    try:
+        index_path = BASE_DIR / "static" / "index.html"
+        if index_path.exists():
+            mtime = int(index_path.stat().st_mtime)
+            return f"mtime:{mtime}"
+    except Exception:
+        pass
+
+    # 4. Absolute fallback: server start time
+    return f"start:{int(time.time())}"
+
+
+DEPLOY_ID = _compute_deploy_id()
+SERVER_STARTED_AT = datetime.now(timezone.utc).isoformat()
+
+print(f"🚀 Deploy ID: {DEPLOY_ID}")
+print(f"🕒 Server started at: {SERVER_STARTED_AT}")
 
 # ============================================================
 # LOGGING
@@ -831,7 +873,7 @@ def get_family():
     return {"members": FAMILY_MEMBERS}
 
 # ============================================================
-# HEALTH
+# HEALTH (used by frontend for auto-refresh detection)
 # ============================================================
 
 @app.get("/api/health")
@@ -840,7 +882,9 @@ def health():
         "status": "ok",
         "kv_enabled": KV_ENABLED,
         "time": datetime.now(timezone.utc).isoformat(),
-        "version": "2.2"
+        "started_at": SERVER_STARTED_AT,
+        "deploy_id": DEPLOY_ID,
+        "version": "2.3"
     }
 
 # ============================================================
@@ -2155,7 +2199,7 @@ def register_mdns():
             "Smart Fridge._http._tcp.local.",
             addresses=[socket.inet_aton(local_ip)],
             port=8000,
-            properties={"path": "/", "name": "Smart Fridge Dashboard", "version": "2.2"},
+            properties={"path": "/", "name": "Smart Fridge Dashboard", "version": "2.3"},
         )
         zeroconf.register_service(service_info)
         print(f"✅ mDNS registered: http://{local_ip}:8000")
