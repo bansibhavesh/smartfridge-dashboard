@@ -48,6 +48,16 @@
 
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    --shadow-card:
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+        0 20px 60px rgba(0, 0, 0, 0.45);
+
+    --shadow-card-hover:
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+        0 28px 80px rgba(0, 0, 0, 0.55);
 }
 
 html, body {
@@ -62,6 +72,19 @@ html, body {
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+
+::selection {
+    background: rgba(120, 165, 255, 0.3);
+    color: white;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid rgba(120, 165, 255, 0.6);
+    outline-offset: 2px;
+}
+
 
 /* ============================================================
    ANIMATIONS
@@ -79,10 +102,6 @@ html, body {
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 }
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
 @keyframes glow {
     0%, 100% { box-shadow: 0 0 20px rgba(120, 165, 255, 0.1); }
     50% { box-shadow: 0 0 40px rgba(120, 165, 255, 0.2); }
@@ -98,10 +117,6 @@ html, body {
 @keyframes float {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     50% { transform: translateY(-8px) rotate(2deg); }
-}
-@keyframes breathe {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
 }
 @keyframes sunPulse {
     0%, 100% { opacity: 0.15; transform: scale(1); }
@@ -132,11 +147,6 @@ html, body {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-6px); }
 }
-@keyframes gradientMove {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
 @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 @keyframes logSlideIn {
     from { opacity: 0; transform: translateX(-10px); }
@@ -146,6 +156,29 @@ html, body {
     0%, 100% { transform: translate(0, 0) scale(1); }
     33%      { transform: translate(3%, 2%) scale(1.05); }
     66%      { transform: translate(-2%, 3%) scale(0.97); }
+}
+@keyframes digitSlideIn {
+    0% { transform: translateY(-100%); opacity: 0; }
+    60% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes clockBlink {
+    0%, 45%, 55%, 100% { opacity: 0.5; }
+    50% { opacity: 0.15; }
+}
+@keyframes confettiBurst {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+@keyframes screenFlash {
+    0% { opacity: 0; }
+    20% { opacity: 0.25; }
+    100% { opacity: 0; }
+}
+@keyframes streakPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 
@@ -178,9 +211,20 @@ html, body {
     opacity: 0.45;
 }
 
+.dashboard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.15;
+    z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+}
+
 
 /* ============================================================
-   AMBIENT SPOTLIGHT
+   AMBIENT SPOTLIGHT — weather-aware static glow
    ============================================================ */
 
 .spotlight {
@@ -265,40 +309,63 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 18px;
+    padding: 0 22px;
     position: relative;
     z-index: 100;
-    background: linear-gradient(180deg,
-        rgba(23, 31, 44, 0.75),
-        rgba(17, 23, 34, 0.75));
+    background:
+        linear-gradient(180deg,
+            rgba(38, 48, 66, 0.7) 0%,
+            rgba(20, 27, 38, 0.85) 100%);
     backdrop-filter: blur(24px) saturate(140%);
     -webkit-backdrop-filter: blur(24px) saturate(140%);
     border-radius: var(--r-lg);
-    border: 1px solid var(--border-1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.06) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+        0 16px 48px rgba(0, 0, 0, 0.4);
     animation: fadeInDown 0.7s var(--ease-spring);
 }
 
 .date {
     color: var(--text-3);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
     text-transform: uppercase;
     margin-top: 4px;
     animation: fadeIn 1s ease 0.3s both;
 }
 
 .clock {
-    font-size: clamp(30px, 3.6vw, 48px);
+    font-size: clamp(32px, 3.8vw, 50px);
     font-weight: 700;
     line-height: 1;
-    letter-spacing: -1.2px;
+    letter-spacing: -2px;
     color: var(--text-1);
-    background: none;
-    -webkit-text-fill-color: var(--text-1);
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
     font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: baseline;
     animation: fadeIn 1s ease 0.5s both;
+}
+
+.clock .clock-digit {
+    position: relative;
+    display: inline-block;
+    min-width: 0.62em;
+    text-align: center;
+}
+
+.clock .clock-digit.tick {
+    animation: digitSlideIn 0.5s var(--ease-spring);
+}
+
+.clock .clock-sep {
+    display: inline-block;
+    opacity: 0.5;
+    padding: 0 2px;
+    animation: clockBlink 2s ease-in-out infinite;
 }
 
 .header-center {
@@ -322,18 +389,17 @@ html, body {
 
 .greeting-text {
     font-size: clamp(18px, 2vw, 26px);
-    font-weight: 600;
-    letter-spacing: -0.3px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
     color: var(--text-1);
-    background: none;
-    -webkit-text-fill-color: var(--text-1);
 }
 
 .greeting-meta {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-3);
     font-weight: 500;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.6px;
+    font-style: italic;
     padding-left: 14px;
     border-left: 1px solid var(--border-2);
     white-space: nowrap;
@@ -437,9 +503,10 @@ html, body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: linear-gradient(180deg,
-        rgba(30, 39, 53, 0.98),
-        rgba(17, 23, 34, 0.98));
+    background:
+        linear-gradient(180deg,
+            rgba(38, 48, 66, 0.95) 0%,
+            rgba(18, 24, 34, 0.98) 100%);
     border: 1px solid var(--border-2);
     border-radius: var(--r-xl);
     padding: 24px 28px;
@@ -448,7 +515,10 @@ html, body {
     font-size: 13px;
     color: var(--text-2);
     z-index: 99999;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 60px 120px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(30px);
     animation: tooltipSlideIn 0.35s var(--ease-spring);
     max-height: 80vh;
@@ -519,7 +589,7 @@ html, body {
 
 
 /* ============================================================
-   GRID (NO z-index — news/tasks need to escape for dimming)
+   GRID
    ============================================================ */
 
 .grid {
@@ -543,13 +613,14 @@ html, body {
     position: relative;
     background:
         linear-gradient(180deg,
-            rgba(23, 31, 44, 0.72) 0%,
-            rgba(17, 23, 34, 0.82) 100%);
+            rgba(38, 48, 66, 0.55) 0%,
+            rgba(23, 30, 42, 0.75) 50%,
+            rgba(15, 20, 30, 0.85) 100%);
     backdrop-filter: blur(24px) saturate(140%);
     -webkit-backdrop-filter: blur(24px) saturate(140%);
     border: 1px solid var(--border-1);
     border-radius: var(--r-xl);
-    padding: 16px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     transition:
@@ -557,9 +628,7 @@ html, body {
         border-color 0.35s var(--ease-smooth),
         box-shadow 0.5s var(--ease-smooth),
         background 0.35s var(--ease-smooth);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.05) inset,
-        0 12px 40px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-card);
     animation: fadeInUp 0.7s var(--ease-spring) both;
 }
 
@@ -567,12 +636,12 @@ html, body {
     content: '';
     position: absolute;
     top: 0;
-    left: 12%;
-    right: 12%;
+    left: 8%;
+    right: 8%;
     height: 1px;
     background: linear-gradient(90deg,
         transparent,
-        rgba(255, 255, 255, 0.14),
+        rgba(255, 255, 255, 0.18) 50%,
         transparent);
     pointer-events: none;
     border-radius: inherit;
@@ -581,28 +650,48 @@ html, body {
 .card:hover {
     border-color: var(--border-2);
     transform: translateY(-3px);
-    box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.06) inset,
-        0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(120, 165, 255, 0.06);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .card h2 {
     flex-shrink: 0;
+    position: relative;
     margin: 0 0 12px;
-    color: var(--text-3);
+    padding-left: 14px;
+    color: var(--text-2);
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
     transition: color 0.4s var(--ease-smooth);
 }
 
+.card h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    opacity: 0.6;
+    box-shadow: 0 0 8px rgba(120, 165, 255, 0.5);
+    transition: all 0.4s var(--ease-smooth);
+}
+
 .card:hover h2 { color: var(--accent-blue); }
+
+.card:hover h2::before {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(120, 165, 255, 0.8);
+    transform: translateY(-50%) scale(1.3);
+}
 
 
 /* ============================================================
-   ISOLATED DIMMING
+   ISOLATED DIMMING — news + tasks punch through
    ============================================================ */
 
 .card.news-card,
@@ -659,19 +748,17 @@ body.dimmed .card.task-card {
 .weather-card .week-strip,
 .weather-card .weather-info-strip { position: relative; z-index: 1; }
 
-.weather { justify-content: space-between; }
-
 .weather-main {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 0;
+    gap: 16px;
+    margin-top: 2px;
     animation: fadeIn 0.8s ease;
 }
 
 .weather-icon {
     font-size: clamp(34px, 3.4vw, 50px);
-    filter: drop-shadow(0 0 24px rgba(120, 165, 255, 0.25));
+    filter: drop-shadow(0 4px 20px rgba(120, 165, 255, 0.35));
     animation: float 6s ease-in-out infinite;
     transition: transform 0.4s ease;
     flex-shrink: 0;
@@ -683,13 +770,12 @@ body.dimmed .card.task-card {
 .weather-icon:hover { transform: scale(1.15) rotate(10deg); }
 
 .weather-temp {
-    font-size: clamp(32px, 3.2vw, 46px);
+    font-size: clamp(44px, 4.4vw, 62px);
     font-weight: 700;
-    letter-spacing: -1.8px;
+    letter-spacing: -3px;
     color: var(--text-1);
-    background: none;
-    -webkit-text-fill-color: var(--text-1);
-    line-height: 0.95;
+    text-shadow: 0 0 40px rgba(120, 165, 255, 0.15);
+    line-height: 0.9;
     font-variant-numeric: tabular-nums;
 }
 
@@ -697,14 +783,31 @@ body.dimmed .card.task-card {
     color: var(--text-2);
     font-size: 12px;
     font-weight: 500;
-    margin-top: 4px;
-    letter-spacing: 0.2px;
+    margin-top: 6px;
+    letter-spacing: 0.4px;
+    text-transform: capitalize;
 }
 
 .weather-temp-bar { margin-top: 6px; width: 100%; position: relative; z-index: 1; }
 .temp-range { display: flex; align-items: center; gap: 10px; }
-.temp-track { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; position: relative; overflow: hidden; }
-.temp-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #3b82f6, #4ade80, #fbbf24, #f87171); transition: width 1.2s var(--ease-spring); }
+.temp-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
+        0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+.temp-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #3b82f6, #4ade80, #fbbf24, #f87171);
+    transition: width 1.2s var(--ease-spring);
+    box-shadow: 0 0 12px rgba(120, 165, 255, 0.4);
+}
 .temp-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-3); margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; }
 #current-temp-label { color: var(--text-1); font-weight: 700; }
 
@@ -716,11 +819,13 @@ body.dimmed .card.task-card {
 }
 
 .weather-detail {
-    background: linear-gradient(180deg,
-        rgba(255, 255, 255, 0.03),
-        rgba(255, 255, 255, 0.005));
+    position: relative;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
     border-radius: var(--r-sm);
-    padding: 6px 10px;
+    padding: 10px 12px;
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 1px;
@@ -731,17 +836,30 @@ body.dimmed .card.task-card {
     flex-direction: column;
     min-height: 42px;
     justify-content: center;
-    border: 1px solid var(--border-1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s var(--ease-smooth);
+}
+
+.weather-detail:hover {
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(120, 165, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .weather-detail strong {
     display: block;
     color: var(--text-1);
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     margin-top: 2px;
     line-height: 1.1;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.5px;
     font-variant-numeric: tabular-nums;
 }
 .weather-detail:nth-child(1) { animation-delay: 0.05s; }
@@ -751,7 +869,7 @@ body.dimmed .card.task-card {
 
 
 /* ============================================================
-   WEEK-AHEAD WEATHER STRIP
+   WEEK-AHEAD
    ============================================================ */
 
 .week-strip {
@@ -780,26 +898,40 @@ body.dimmed .card.task-card {
     align-items: center;
     justify-content: center;
     gap: 0;
-    padding: 5px 1px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-    border: 1px solid transparent;
+    padding: 7px 2px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.005) 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.35s var(--ease-spring);
     min-width: 0;
     overflow: hidden;
 }
 
 .week-day:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     transform: translateY(-2px);
     border-color: var(--border-2);
 }
 
 .week-day.today {
-    background: rgba(120, 165, 255, 0.10);
-    border-color: rgba(120, 165, 255, 0.28);
-    box-shadow: 0 0 20px rgba(120, 165, 255, 0.12);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.18) 0%,
+            rgba(120, 165, 255, 0.06) 100%);
+    border-color: rgba(120, 165, 255, 0.4);
+    box-shadow:
+        0 0 24px rgba(120, 165, 255, 0.15),
+        0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+.week-day.today .week-day-high { color: #b8d0ff; }
 
 .week-day-label {
     font-size: 8px;
@@ -813,11 +945,7 @@ body.dimmed .card.task-card {
 
 .week-day.today .week-day-label { color: var(--accent-blue); }
 
-.week-day-icon {
-    font-size: 13px;
-    line-height: 1;
-    margin: 0;
-}
+.week-day-icon { font-size: 13px; line-height: 1; margin: 0; }
 
 .week-day-high {
     font-size: 11px;
@@ -828,12 +956,7 @@ body.dimmed .card.task-card {
     letter-spacing: -0.3px;
 }
 
-.week-day-low {
-    font-size: 9px;
-    line-height: 1;
-    color: var(--text-3);
-    margin-top: 2px;
-}
+.week-day-low { font-size: 9px; line-height: 1; color: var(--text-3); margin-top: 2px; }
 
 .week-day-rain {
     font-size: 7px;
@@ -1016,8 +1139,85 @@ body.dimmed .card.task-card {
 .tasks-tab:hover { color: var(--text-1); background: rgba(255, 255, 255, 0.04); }
 .tasks-tab.active { color: var(--text-1); background: rgba(120, 165, 255, 0.15); box-shadow: 0 4px 15px rgba(120, 165, 255, 0.08); }
 
-.tasks-tab-content { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.tasks-tab-content {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
 .tasks-tab-content.active { display: flex; animation: fadeIn 0.4s ease; }
+
+.todo-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+}
+.todo-list::-webkit-scrollbar { display: none; }
+
+.todo-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-3);
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    text-align: center;
+    padding: 20px;
+    animation: fadeIn 0.6s ease;
+}
+
+.todo-empty-icon {
+    font-size: 42px;
+    opacity: 0.55;
+    filter: grayscale(0.15);
+    animation: float 5s ease-in-out infinite;
+}
+
+.todo-empty-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: -0.2px;
+}
+
+.todo-empty-hint {
+    font-size: 10px;
+    color: var(--text-3);
+    opacity: 0.7;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Streak counter */
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: linear-gradient(180deg,
+        rgba(251, 191, 36, 0.18) 0%,
+        rgba(251, 146, 60, 0.10) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fcd34d;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    animation: streakPop 0.5s var(--ease-spring);
+}
+
+.streak-badge .streak-flame { font-size: 13px; }
 
 .grocery-categories { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; flex-wrap: wrap; }
 
@@ -1051,19 +1251,29 @@ body.dimmed .card.task-card {
     gap: 12px;
     padding: 11px 14px;
     margin-bottom: 6px;
-    background: rgba(255, 255, 255, 0.025);
-    border-radius: 12px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.035) 0%,
+            rgba(255, 255, 255, 0.008) 100%);
+    border-radius: 14px;
     font-size: clamp(12px, 1.05vw, 14px);
     transition: all 0.3s var(--ease-spring);
     animation: slideInLeft 0.45s var(--ease-spring) both;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     min-height: 52px;
 }
 
 .grocery-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(120, 165, 255, 0.18);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.18),
+        0 0 0 1px rgba(120, 165, 255, 0.08);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
     transform: translateX(4px);
-    border-color: var(--border-2);
 }
 
 .grocery-category-tag {
@@ -1076,15 +1286,13 @@ body.dimmed .card.task-card {
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 
 /* ============================================================
-   TODO
+   TODO rows
    ============================================================ */
-
-.todo-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
-.todo-list::-webkit-scrollbar { display: none; }
 
 .todo {
     display: flex;
@@ -1092,27 +1300,39 @@ body.dimmed .card.task-card {
     gap: 12px;
     padding: 11px 14px;
     margin-bottom: 6px;
-    background: rgba(255, 255, 255, 0.025);
-    border-radius: 12px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.035) 0%,
+            rgba(255, 255, 255, 0.008) 100%);
+    border-radius: 14px;
     font-size: clamp(12px, 1.05vw, 14px);
     transition: all 0.3s var(--ease-spring);
     animation: slideInLeft 0.45s var(--ease-spring) both;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     min-height: 52px;
+    position: relative;
 }
 
 .todo:hover {
-    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(120, 165, 255, 0.18);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.18),
+        0 0 0 1px rgba(120, 165, 255, 0.08);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
     transform: translateX(4px);
-    border-color: var(--border-2);
 }
 
 .todo-checkbox {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     accent-color: var(--accent-blue);
     cursor: pointer;
+    border-radius: 6px;
     transition: transform 0.25s var(--ease-spring);
 }
 .todo-checkbox:hover { transform: scale(1.15); }
@@ -1124,15 +1344,19 @@ body.dimmed .card.task-card {
     white-space: nowrap;
     color: var(--text-1);
     font-weight: 500;
-    letter-spacing: -0.1px;
+    letter-spacing: -0.2px;
 }
 .todo:has(.todo-checkbox:checked) .todo-title { text-decoration: line-through; color: var(--text-3); }
 .todo-person {
     color: var(--text-3);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .add-task { flex-shrink: 0; margin-top: 8px; }
@@ -1143,41 +1367,72 @@ body.dimmed .card.task-card {
     flex: 1;
     height: 44px;
     padding: 0 16px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-1);
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.2) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--r-sm);
     color: var(--text-1);
     outline: none;
     font-size: 13px;
     font-weight: 500;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
     transition: all 0.3s var(--ease-smooth);
 }
 
 .add-task input::placeholder { color: var(--text-3); }
 
 .add-task input:focus {
-    border-color: rgba(120, 165, 255, 0.35);
-    background: rgba(0, 0, 0, 0.35);
-    box-shadow: 0 0 0 3px rgba(120, 165, 255, 0.08);
+    border-color: rgba(120, 165, 255, 0.5);
+    box-shadow:
+        0 0 0 3px rgba(120, 165, 255, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.4) 0%,
+            rgba(0, 0, 0, 0.25) 100%);
 }
 
 .add-task-submit {
+    position: relative;
+    overflow: hidden;
     width: 44px;
     height: 44px;
     border: none;
     border-radius: var(--r-sm);
-    background: linear-gradient(180deg, #86b0ff, #6a8fdd);
+    background: linear-gradient(180deg, #98bcff 0%, #6a8fdd 100%);
     font-size: 22px;
     font-weight: 700;
     color: #05070b;
     transition: all 0.3s var(--ease-spring);
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(120, 165, 255, 0.25);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 4px 16px rgba(120, 165, 255, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .add-task-submit:hover {
-    transform: translateY(-1px) scale(1.04);
-    box-shadow: 0 8px 24px rgba(120, 165, 255, 0.4);
+    transform: translateY(-1px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(120, 165, 255, 0.5),
+        0 2px 6px rgba(0, 0, 0, 0.35);
 }
+.add-task-submit:active { transform: translateY(0); }
+.add-task-submit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+.add-task-submit:hover::before { left: 100%; }
 
 .member-select { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; }
 
@@ -1203,6 +1458,48 @@ body.dimmed .card.task-card {
     background: rgba(120, 165, 255, 0.10);
     box-shadow: 0 0 0 3px rgba(120, 165, 255, 0.06);
 }
+
+
+/* ============================================================
+   PULL-TO-REFRESH INDICATOR
+   ============================================================ */
+
+.ptr-indicator {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #98bcff, #6a8fdd);
+    color: #05070b;
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.25s var(--ease-spring);
+    z-index: 10;
+    box-shadow: 0 4px 16px rgba(120, 165, 255, 0.4);
+}
+
+.ptr-indicator.visible {
+    opacity: 1;
+}
+
+.ptr-indicator.spin {
+    animation: ptrSpin 0.8s linear infinite;
+}
+
+@keyframes ptrSpin {
+    from { transform: translate(-50%, 20px) rotate(0deg); }
+    to { transform: translate(-50%, 20px) rotate(360deg); }
+}
+
+.task-card { position: relative; }
 
 
 /* ============================================================
@@ -1245,7 +1542,7 @@ body.dimmed .card.task-card {
     font-size: clamp(16px, 1.5vw, 22px);
     font-weight: 700;
     color: var(--text-1);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.8px;
 }
 .calendar-nav { display: flex; gap: 6px; }
 
@@ -1295,37 +1592,47 @@ body.dimmed .card.task-card {
     position: relative;
     min-height: 0;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.025) 0%,
+            rgba(255, 255, 255, 0.005) 100%);
     padding: 3px 5px;
     font-size: clamp(9px, 0.9vw, 12px);
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.3s var(--ease-spring);
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s var(--ease-spring);
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
 }
 
 .calendar-day:hover {
-    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(120, 165, 255, 0.2);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(120, 165, 255, 0.15);
     transform: scale(1.06);
     z-index: 1;
-    border-color: var(--border-2);
 }
-.calendar-day.empty {
-    background: transparent;
-    cursor: default;
-    border: none;
-}
+.calendar-day.empty { background: transparent; cursor: default; border: none; box-shadow: none; }
 .calendar-day.today {
-    border: 1px solid rgba(120, 165, 255, 0.4);
-    background: rgba(120, 165, 255, 0.06);
-    box-shadow: inset 0 0 0 1px rgba(120, 165, 255, 0.1);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.15) 0%,
+            rgba(120, 165, 255, 0.05) 100%);
+    border-color: rgba(120, 165, 255, 0.5);
+    box-shadow:
+        0 0 20px rgba(120, 165, 255, 0.2),
+        0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .calendar-day.has-event {
-    background: rgba(120, 165, 255, 0.08);
-    border: 1px solid rgba(120, 165, 255, 0.18);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.12) 0%,
+            rgba(120, 165, 255, 0.04) 100%);
+    border-color: rgba(120, 165, 255, 0.28);
 }
 
 .calendar-day-number {
@@ -1468,7 +1775,10 @@ body.dimmed .card.task-card {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 0 40px rgba(255,0,0,0.2), 0 0 80px rgba(255,0,0,0.1);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.2) inset,
+        0 0 40px rgba(255, 0, 0, 0.3),
+        0 8px 24px rgba(255, 0, 0, 0.2);
     transition: all 0.5s var(--ease-spring);
 }
 .youtube-logo:hover { transform: scale(1.1) rotate(-3deg); box-shadow: 0 0 60px rgba(255,0,0,0.4), 0 0 100px rgba(255,0,0,0.2); }
@@ -1577,18 +1887,29 @@ body.dimmed .card.task-card {
     flex: 1;
     min-width: 0;
     height: 44px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-1);
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.2) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--r-sm);
     color: var(--text-1);
     padding: 0 16px;
     outline: none;
     font-size: 13px;
     font-weight: 500;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
     transition: all 0.3s var(--ease-smooth);
 }
 .youtube-search input::placeholder { color: var(--text-3); }
-.youtube-search input:focus { border-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.08); }
+.youtube-search input:focus {
+    border-color: rgba(255, 0, 0, 0.4);
+    box-shadow:
+        0 0 0 3px rgba(255, 0, 0, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
+}
 
 .youtube-search button {
     width: 48px;
@@ -1600,9 +1921,16 @@ body.dimmed .card.task-card {
     font-size: 16px;
     cursor: pointer;
     transition: all 0.3s var(--ease-spring);
-    box-shadow: 0 4px 14px rgba(255, 0, 0, 0.25);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.2) inset,
+        0 4px 14px rgba(255, 0, 0, 0.25);
 }
-.youtube-search button:hover { box-shadow: 0 8px 24px rgba(255, 0, 0, 0.4); transform: translateY(-1px); }
+.youtube-search button:hover {
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 8px 24px rgba(255, 0, 0, 0.45);
+    transform: translateY(-1px);
+}
 
 .youtube-back {
     display: none;
@@ -1634,8 +1962,11 @@ body.dimmed .card.task-card {
     align-items: center;
     justify-content: center;
     padding: 16px 8px;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid var(--border-1);
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--r-lg);
     cursor: pointer;
     transition: all 0.4s var(--ease-spring);
@@ -1643,15 +1974,23 @@ body.dimmed .card.task-card {
     color: var(--text-1);
     gap: 8px;
     min-height: 90px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px rgba(0, 0, 0, 0.2);
     animation: appFloat 5s ease-in-out infinite;
 }
 .streaming-app:nth-child(1) { animation-delay: 0s; }
 .streaming-app:nth-child(2) { animation-delay: 0.4s; }
 .streaming-app:nth-child(3) { animation-delay: 0.8s; }
 .streaming-app:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
     transform: translateY(-6px) scale(1.04);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 16px 40px rgba(0, 0, 0, 0.4);
 }
 .streaming-app .app-icon { font-size: clamp(28px, 2.8vw, 40px); transition: transform 0.4s var(--ease-spring); }
 .streaming-app:hover .app-icon { transform: scale(1.15) rotate(-5deg); }
@@ -1678,10 +2017,12 @@ body.dimmed .card.task-card {
     overflow: hidden;
     background:
         linear-gradient(180deg,
-            rgba(255, 255, 255, 0.02),
-            transparent 30%),
-        rgba(6, 10, 17, 0.85);
-    border-color: rgba(74, 222, 128, 0.08);
+            rgba(8, 14, 20, 0.95) 0%,
+            rgba(4, 8, 12, 0.98) 100%);
+    border-color: rgba(74, 222, 128, 0.12);
+    box-shadow:
+        0 1px 0 rgba(74, 222, 128, 0.06) inset,
+        0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .log-card h2 {
     color: var(--accent-green);
@@ -1736,22 +2077,31 @@ body.dimmed .card.task-card {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    background: rgba(0, 0, 0, 0.35);
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.5) 0%,
+            rgba(0, 0, 0, 0.3) 100%);
     border-radius: var(--r-sm);
     padding: 6px 0;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     font-size: 11px;
     line-height: 1.6;
-    border: 1px solid rgba(74, 222, 128, 0.05);
+    border: 1px solid rgba(74, 222, 128, 0.08);
+    box-shadow: 0 0 40px rgba(74, 222, 128, 0.03) inset;
 }
 .log-container::-webkit-scrollbar { width: 4px; }
 .log-container::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
-.log-container::-webkit-scrollbar-thumb { background: rgba(74, 222, 128, 0.2); border-radius: 4px; }
+.log-container::-webkit-scrollbar-thumb {
+    background: rgba(74, 222, 128, 0.25);
+    border-radius: 4px;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
+}
+.log-container::-webkit-scrollbar-thumb:hover { background: rgba(74, 222, 128, 0.4); }
 
 .log-entry {
     display: flex;
     align-items: flex-start;
-    padding: 3px 10px;
+    padding: 4px 12px;
     margin: 0;
     border-left: 2px solid transparent;
     animation: logSlideIn 0.2s ease both;
@@ -1769,6 +2119,8 @@ body.dimmed .card.task-card {
     min-width: 65px;
     user-select: none;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: 0.3px;
 }
 .log-entry .log-level { font-size: 10px; flex-shrink: 0; width: 18px; text-align: center; margin: 0 4px; }
 .log-entry .log-message { flex: 1; color: rgba(200, 210, 220, 0.85); word-break: break-word; }
@@ -1830,19 +2182,29 @@ body.dimmed .card.task-card {
 #news-container::-webkit-scrollbar { display: none; }
 
 .news-item {
-    background: rgba(255, 255, 255, 0.025);
-    padding: 11px 14px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.005) 100%);
+    padding: 14px 16px;
     margin-bottom: 6px;
-    border-radius: 12px;
+    border-radius: 14px;
     font-size: clamp(11px, 1vw, 14px);
     transition: all 0.3s var(--ease-spring);
     animation: slideInLeft 0.45s var(--ease-spring) both;
-    border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 .news-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(120, 165, 255, 0.18);
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(120, 165, 255, 0.08);
+    background:
+        linear-gradient(180deg,
+            rgba(120, 165, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.01) 100%);
     transform: translateX(4px);
-    border-color: var(--border-2);
 }
 
 .news-source {
@@ -1855,7 +2217,13 @@ body.dimmed .card.task-card {
     text-transform: uppercase;
     opacity: 0.85;
 }
-.news-title { font-weight: 600; line-height: 1.35; margin-top: 2px; color: var(--text-1); }
+.news-title {
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.4;
+    margin-top: 2px;
+    color: var(--text-1);
+}
 .news-description { color: var(--text-2); font-size: 11px; margin-top: 5px; line-height: 1.5; }
 .news-empty { color: var(--text-3); text-align: center; padding: 30px 10px; font-size: 11px; }
 
@@ -1892,17 +2260,19 @@ body.dimmed .card.task-card {
 
 .modal-box {
     width: min(430px, 92vw);
-    background: linear-gradient(180deg,
-        rgba(30, 39, 53, 0.95),
-        rgba(17, 23, 34, 0.95));
+    background:
+        linear-gradient(180deg,
+            rgba(38, 48, 66, 0.95) 0%,
+            rgba(18, 24, 34, 0.98) 100%);
     border: 1px solid var(--border-2);
     border-radius: var(--r-xl);
     padding: 26px;
     animation: fadeInUp 0.4s var(--ease-spring);
     backdrop-filter: blur(30px);
     box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-        0 40px 100px rgba(0, 0, 0, 0.7);
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 60px 120px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: var(--text-1); letter-spacing: -0.4px; }
@@ -1913,17 +2283,28 @@ body.dimmed .card.task-card {
     width: 100%;
     height: 46px;
     padding: 0 16px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-1);
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.2) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     color: var(--text-1);
     outline: none;
     font-size: 15px;
     font-weight: 500;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
     transition: all 0.3s var(--ease-smooth);
 }
 .event-form input::placeholder { color: var(--text-3); }
-.event-form input:focus { border-color: rgba(120, 165, 255, 0.35); box-shadow: 0 0 0 3px rgba(120, 165, 255, 0.08); }
+.event-form input:focus {
+    border-color: rgba(120, 165, 255, 0.5);
+    box-shadow:
+        0 0 0 3px rgba(120, 165, 255, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
+}
 
 .event-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .modal-buttons { display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px; margin-top: 4px; }
@@ -1943,8 +2324,34 @@ body.dimmed .card.task-card {
 .cancel-button { background: rgba(255, 255, 255, 0.04); color: var(--text-2); border: 1px solid var(--border-1); }
 .cancel-button:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); color: var(--text-1); }
 
-.add-event-button { background: linear-gradient(180deg, #86b0ff, #6a8fdd); color: #05070b; box-shadow: 0 4px 14px rgba(120, 165, 255, 0.25); }
-.add-event-button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(120, 165, 255, 0.4); }
+.add-event-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #98bcff 0%, #6a8fdd 100%);
+    color: #05070b;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 4px 16px rgba(120, 165, 255, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.add-event-button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(120, 165, 255, 0.5),
+        0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.add-event-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+.add-event-button:hover::before { left: 100%; }
 
 .event-status { min-height: 18px; color: var(--text-3); font-size: 11px; text-align: center; }
 
@@ -2026,26 +2433,39 @@ body.dimmed .card.task-card {
     min-width: 60px;
     height: 40px;
     padding: 0 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-1);
+    background:
+        linear-gradient(180deg,
+            rgba(0, 0, 0, 0.35) 0%,
+            rgba(0, 0, 0, 0.2) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--r-sm);
     color: var(--text-1);
     outline: none;
     font-size: 13px;
     font-weight: 500;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
     transition: all 0.3s var(--ease-smooth);
 }
 .scheduled-form input::placeholder { color: var(--text-3); }
 .scheduled-form input:focus,
-.scheduled-form select:focus { border-color: rgba(120, 165, 255, 0.35); box-shadow: 0 0 0 3px rgba(120, 165, 255, 0.08); }
+.scheduled-form select:focus {
+    border-color: rgba(120, 165, 255, 0.5);
+    box-shadow:
+        0 0 0 3px rgba(120, 165, 255, 0.1),
+        0 2px 6px rgba(0, 0, 0, 0.2) inset;
+}
 .scheduled-form select option { background: #181e2a; color: var(--text-1); }
 
 .scheduled-form .submit-btn {
+    position: relative;
+    overflow: hidden;
     height: 40px;
     padding: 0 20px;
     border: none;
     border-radius: var(--r-sm);
-    background: linear-gradient(180deg, #86b0ff, #6a8fdd);
+    background: linear-gradient(180deg, #98bcff 0%, #6a8fdd 100%);
     color: #05070b;
     font-weight: 700;
     cursor: pointer;
@@ -2054,9 +2474,18 @@ body.dimmed .card.task-card {
     flex-shrink: 0;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    box-shadow: 0 4px 14px rgba(120, 165, 255, 0.25);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 4px 16px rgba(120, 165, 255, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.3);
 }
-.scheduled-form .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(120, 165, 255, 0.4); }
+.scheduled-form .submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(120, 165, 255, 0.5),
+        0 2px 6px rgba(0, 0, 0, 0.35);
+}
 
 .scheduled-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .scheduled-header h3 { color: var(--text-1); font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.2px; }
@@ -2099,7 +2528,7 @@ body.dimmed .card.task-card {
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: linear-gradient(180deg, #86b0ff, #6a8fdd);
+    background: linear-gradient(180deg, #98bcff 0%, #6a8fdd 100%);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #05070b;
     font-size: 26px;
@@ -2107,8 +2536,8 @@ body.dimmed .card.task-card {
     cursor: pointer;
     z-index: 99990;
     box-shadow:
-        0 8px 32px rgba(120, 165, 255, 0.35),
-        0 1px 0 rgba(255, 255, 255, 0.3) inset;
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 8px 32px rgba(120, 165, 255, 0.35);
     transition: transform 0.3s var(--ease-spring), box-shadow 0.3s;
     display: flex;
     align-items: center;
@@ -2119,24 +2548,61 @@ body.dimmed .card.task-card {
 #timerFab:hover {
     transform: scale(1.06) translateY(-2px);
     box-shadow:
-        0 12px 40px rgba(120, 165, 255, 0.55),
-        0 1px 0 rgba(255, 255, 255, 0.35) inset;
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 12px 40px rgba(120, 165, 255, 0.55);
 }
 #timerFab:active { transform: scale(0.94); }
 #timerFab.running {
     background: linear-gradient(180deg, #fcd34d, #f59e0b);
     box-shadow:
-        0 8px 32px rgba(251, 191, 36, 0.4),
-        0 1px 0 rgba(255, 255, 255, 0.3) inset;
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 8px 32px rgba(251, 191, 36, 0.4);
     font-size: 18px;
 }
 
 
 /* ============================================================
-   RESPONSIVE — tablets & smaller screens
+   CONFETTI + SCREEN FLASH
    ============================================================ */
 
-/* Medium screens: shrink weather card a bit so week strip fits */
+#confettiLayer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99996;
+    overflow: hidden;
+}
+
+.confetti-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+#screenFlash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%,
+        rgba(120, 165, 255, 0.4),
+        transparent 70%);
+    opacity: 0;
+    z-index: 99995;
+    mix-blend-mode: screen;
+}
+
+#screenFlash.flash {
+    animation: screenFlash 0.8s ease-out;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
 @media (max-width: 1400px) {
     .weather-temp { font-size: clamp(28px, 2.8vw, 40px); letter-spacing: -1.5px; }
     .weather-icon { font-size: clamp(30px, 3vw, 44px); }
@@ -2155,7 +2621,6 @@ body.dimmed .card.task-card {
     .weather-info-strip { font-size: 10px; min-height: 26px; padding: 5px 10px 5px 14px; margin-top: 5px; }
 }
 
-/* Narrow screens: hide low/rain labels in week strip */
 @media (max-width: 900px) {
     .week-day-low,
     .week-day-rain {
@@ -2170,18 +2635,15 @@ body.dimmed .card.task-card {
     }
 }
 
-/* Short viewports: hide info strip so week strip gets priority */
 @media (max-height: 800px) {
     .weather-info-strip { display: none; }
     .weather-card { padding-bottom: 10px; }
 }
 
-/* Very short viewports: hide weather detail tiles too */
 @media (max-height: 700px) {
     .weather-details { display: none; }
 }
 
-/* Portrait orientation: single-column layout */
 @media (orientation: portrait) {
     html, body { overflow-y: auto; height: auto; }
     .dashboard { height: auto; min-height: 100dvh; padding: 12px; }
@@ -2213,7 +2675,13 @@ body.dimmed .card.task-card {
 <header class="top">
     <div>
         <div class="date" id="date"></div>
-        <div class="clock" id="clock"></div>
+        <div class="clock" id="clock">
+            <span class="clock-digit" data-slot="h1">0</span>
+            <span class="clock-digit" data-slot="h2">0</span>
+            <span class="clock-sep">:</span>
+            <span class="clock-digit" data-slot="m1">0</span>
+            <span class="clock-digit" data-slot="m2">0</span>
+        </div>
     </div>
     <div class="header-center">
         <div class="greeting-container" id="greetingContainer">
@@ -2253,6 +2721,7 @@ body.dimmed .card.task-card {
 
 <!-- TASKS / GROCERY -->
 <section class="card tasks-card task-card">
+<div class="ptr-indicator" id="ptrIndicator">↻</div>
 <div class="tasks-header">
     <h2>📋 TASKS</h2>
     <div class="tasks-header-right">
@@ -2449,6 +2918,8 @@ body.dimmed .card.task-card {
 
 <div id="dimOverlay" onclick="wakeScreen()"></div>
 <div id="undoHost" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99996;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;"></div>
+<div id="confettiLayer"></div>
+<div id="screenFlash"></div>
 <button id="timerFab" onclick="handleTimerClick()" title="Kitchen Timer">⏱</button>
 
 <!-- EVENT MODAL -->
@@ -2533,7 +3004,122 @@ window.pushClientLog = pushClientLog;
 
 
 /* ============================================================
-   AMBIENT SPOTLIGHT — static, weather-aware
+   CONFETTI + SCREEN FLASH
+   ============================================================ */
+
+const CONFETTI_COLORS = [
+    '#78a5ff', '#4ade80', '#fbbf24', '#f87171',
+    '#a78bfa', '#f472b6', '#67e8f9'
+];
+
+function fireConfetti(x, y, count = 24) {
+    const layer = document.getElementById('confettiLayer');
+    if (!layer) return;
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-particle';
+
+        const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        const size = 6 + Math.random() * 6;
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+        const distance = 60 + Math.random() * 140;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance - 40 + Math.random() * 60;
+        const rot = (Math.random() - 0.5) * 720;
+        const duration = 700 + Math.random() * 600;
+
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.background = color;
+        p.style.boxShadow = `0 0 12px ${color}`;
+        p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        p.style.setProperty('--rot', rot + 'deg');
+        p.style.animation = `confettiBurst ${duration}ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards`;
+
+        layer.appendChild(p);
+
+        setTimeout(() => p.remove(), duration + 100);
+    }
+}
+
+window.fireConfetti = fireConfetti;
+
+function fireScreenFlash() {
+    const flash = document.getElementById('screenFlash');
+    if (!flash) return;
+    flash.classList.remove('flash');
+    void flash.offsetWidth;
+    flash.classList.add('flash');
+    setTimeout(() => flash.classList.remove('flash'), 900);
+}
+
+
+/* ============================================================
+   COMPLETION SOUND
+   ============================================================ */
+
+let _dingAudio = null;
+function playDing() {
+    try {
+        if (!_dingAudio) {
+            _dingAudio = new Audio('/static/ding.mp3');
+            _dingAudio.volume = 0.35;
+        }
+        const a = _dingAudio.cloneNode();
+        a.volume = 0.35;
+        a.play().catch(() => {});
+    } catch(e) {}
+}
+
+
+/* ============================================================
+   STREAK TRACKER
+   ============================================================ */
+
+const STREAK_KEY = 'fridge_streak_v1';
+
+function loadStreak() {
+    try {
+        const raw = localStorage.getItem(STREAK_KEY);
+        if (!raw) return { count: 0, date: null };
+        const parsed = JSON.parse(raw);
+        const today = new Date().toDateString();
+        if (parsed.date !== today) {
+            return { count: 0, date: today };
+        }
+        return parsed;
+    } catch(e) {
+        return { count: 0, date: new Date().toDateString() };
+    }
+}
+
+function saveStreak(s) {
+    try {
+        localStorage.setItem(STREAK_KEY, JSON.stringify(s));
+    } catch(e) {}
+}
+
+function incrementStreak() {
+    const s = loadStreak();
+    s.count = (s.count || 0) + 1;
+    s.date = new Date().toDateString();
+    saveStreak(s);
+    return s.count;
+}
+
+function getStreakCount() {
+    const s = loadStreak();
+    return s.count || 0;
+}
+
+
+/* ============================================================
+   AMBIENT SPOTLIGHT — weather-aware
    ============================================================ */
 
 let spotlightEl = null;
@@ -3114,13 +3700,37 @@ function renderYouTubeResults(items) {
 
 
 /* ============================================================
-   CLOCK
+   ANIMATED CLOCK
    ============================================================ */
+
+const _clockSlots = { h1: null, h2: null, m1: null, m2: null };
 
 function updateClock() {
     const now = new Date();
-    document.getElementById("clock").textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    document.getElementById("date").textContent = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+
+    const next = { h1: hh[0], h2: hh[1], m1: mm[0], m2: mm[1] };
+
+    document.querySelectorAll('.clock-digit').forEach(el => {
+        const slot = el.dataset.slot;
+        const newVal = next[slot];
+        if (newVal === undefined) return;
+
+        if (_clockSlots[slot] !== newVal) {
+            _clockSlots[slot] = newVal;
+            el.textContent = newVal;
+            el.classList.remove('tick');
+            void el.offsetWidth;
+            el.classList.add('tick');
+        }
+    });
+
+    const dateEl = document.getElementById("date");
+    const dateStr = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    if (dateEl.textContent !== dateStr) {
+        dateEl.textContent = dateStr;
+    }
 }
 updateClock();
 setInterval(updateClock, 1000);
@@ -3211,7 +3821,24 @@ function renderTasks() {
     const container = document.getElementById("todo-list");
     container.innerHTML = "";
     const visible = allTasks.filter(t => !pendingHideTasks.has(t.id));
-    if (!visible.length) { container.innerHTML = '<div style="text-align:center;color:var(--text-3);padding:30px 10px;font-size:12px;">🎉 No tasks</div>'; return; }
+
+    const streak = getStreakCount();
+    const streakHTML = streak > 0
+        ? `<div class="streak-badge"><span class="streak-flame">🔥</span>${streak} done today</div>`
+        : '';
+
+    if (!visible.length) {
+        container.innerHTML = `
+            <div class="todo-empty">
+                <div class="todo-empty-icon">🎉</div>
+                <div class="todo-empty-title">All caught up!</div>
+                <div class="todo-empty-hint">No tasks · Add one below</div>
+                ${streakHTML}
+            </div>
+        `;
+        return;
+    }
+
     visible.slice(0, 50).forEach((task, index) => {
         const item = document.createElement("div");
         item.className = "todo";
@@ -3234,11 +3861,25 @@ function renderTasks() {
 }
 
 async function completeTask(taskId, checkbox) {
+    const rect = checkbox.getBoundingClientRect();
+    const wasLastTask = (allTasks.filter(t => !pendingHideTasks.has(t.id)).length === 1);
+
+    // Fire confetti + ding + streak
+    fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, wasLastTask ? 60 : 22);
+    playDing();
+    incrementStreak();
+
+    if (wasLastTask) {
+        fireScreenFlash();
+        setTimeout(() => fireScreenFlash(), 200);
+    }
+
     pendingHideTasks.add(taskId);
     const item = checkbox.closest('.todo');
     if (item) {
-        item.style.transition = 'opacity 0.3s';
+        item.style.transition = 'opacity 0.3s, transform 0.3s';
         item.style.opacity = '0.4';
+        item.style.transform = 'translateX(20px)';
     }
     checkbox.disabled = true;
 
@@ -3282,6 +3923,67 @@ document.getElementById("add-task-form").addEventListener("submit", async event 
     input.disabled = false;
     input.focus();
 });
+
+
+/* ============================================================
+   PULL-TO-REFRESH (on task list)
+   ============================================================ */
+
+(function setupPullToRefresh() {
+    const list = document.getElementById('todo-list');
+    const indicator = document.getElementById('ptrIndicator');
+    if (!list || !indicator) return;
+
+    let startY = 0;
+    let pulling = false;
+    let dist = 0;
+    const THRESHOLD = 70;
+
+    list.addEventListener('touchstart', e => {
+        if (list.scrollTop > 0) return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+        dist = 0;
+    }, { passive: true });
+
+    list.addEventListener('touchmove', e => {
+        if (!pulling) return;
+        const y = e.touches[0].clientY;
+        dist = y - startY;
+
+        if (dist > 10) {
+            const pull = Math.min(dist, 100);
+            indicator.classList.add('visible');
+            indicator.style.transform = `translate(-50%, ${pull * 0.4 + 5}px)`;
+            indicator.style.opacity = Math.min(pull / 60, 1);
+        }
+    }, { passive: true });
+
+    list.addEventListener('touchend', async () => {
+        if (!pulling) return;
+        pulling = false;
+
+        if (dist > THRESHOLD) {
+            indicator.classList.add('spin');
+            indicator.style.transform = 'translate(-50%, 20px)';
+            try {
+                await loadTasks();
+                await loadGrocery();
+            } catch(e) {}
+            setTimeout(() => {
+                indicator.classList.remove('visible');
+                indicator.classList.remove('spin');
+                indicator.style.transform = 'translate(-50%, -40px)';
+                indicator.style.opacity = '0';
+            }, 400);
+        } else {
+            indicator.classList.remove('visible');
+            indicator.style.transform = 'translate(-50%, -40px)';
+            indicator.style.opacity = '0';
+        }
+        dist = 0;
+    }, { passive: true });
+})();
 
 
 /* ============================================================
@@ -3346,7 +4048,16 @@ function renderGrocery() {
     if (selectedGroceryCategory !== "all") {
         filtered = filtered.filter(item => item.category === selectedGroceryCategory);
     }
-    if (!filtered.length) { container.innerHTML = '<div style="text-align:center;color:var(--text-3);padding:30px 10px;font-size:12px;">🛒 No grocery items</div>'; return; }
+    if (!filtered.length) {
+        container.innerHTML = `
+            <div class="todo-empty">
+                <div class="todo-empty-icon">🛒</div>
+                <div class="todo-empty-title">Nothing on the list</div>
+                <div class="todo-empty-hint">Tap a category below to add</div>
+            </div>
+        `;
+        return;
+    }
     filtered.slice(0, 50).forEach((item, index) => {
         const div = document.createElement("div");
         div.className = "grocery-item";
@@ -3370,11 +4081,17 @@ function renderGrocery() {
 }
 
 async function completeGroceryItem(itemId, checkbox) {
+    const rect = checkbox.getBoundingClientRect();
+    fireConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 22);
+    playDing();
+    incrementStreak();
+
     pendingHideGrocery.add(itemId);
     const item = checkbox.closest('.grocery-item');
     if (item) {
-        item.style.transition = 'opacity 0.3s';
+        item.style.transition = 'opacity 0.3s, transform 0.3s';
         item.style.opacity = '0.4';
+        item.style.transform = 'translateX(20px)';
     }
     checkbox.disabled = true;
 
@@ -3792,7 +4509,7 @@ function updateTempBar(temp) {
 
 
 /* ============================================================
-   WEATHER INFO STRIP — facts only + spotlight color driver
+   WEATHER INFO STRIP — facts + spotlight color driver
    ============================================================ */
 
 const weatherFacts = {
@@ -3843,6 +4560,7 @@ function updateWeatherInfoStrip(alerts, weatherCode) {
     const iconEl = strip.querySelector('.info-icon');
     const textEl = strip.querySelector('.info-text');
 
+    // Drive the weather-aware spotlight color
     setSpotlightWeather(alerts && alerts.length ? alerts[0] : null);
 
     const type = pickWeatherType(weatherCode);
