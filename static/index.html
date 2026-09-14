@@ -165,7 +165,7 @@ html, body {
     background: var(--bg-0);
 }
 
-/* Fine grain texture — subtle, sits above the base background */
+/* Fine grain texture */
 .dashboard::before {
     content: '';
     position: absolute;
@@ -188,7 +188,7 @@ html, body {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;              /* ← was 1: sits naturally below cards via DOM order */
     overflow: hidden;
     --spot-rgb: 120, 165, 255;
 }
@@ -205,7 +205,6 @@ html, body {
     will-change: transform, opacity;
 }
 
-/* Top-left hero glow */
 .spotlight-blob-tl {
     top: -30%;
     left: -20%;
@@ -221,7 +220,6 @@ html, body {
     animation-delay: 0s;
 }
 
-/* Top-right accent */
 .spotlight-blob-tr {
     top: -25%;
     right: -25%;
@@ -236,7 +234,6 @@ html, body {
     animation-delay: -7s;
 }
 
-/* Bottom-center subtle base */
 .spotlight-blob-bc {
     bottom: -40%;
     left: 20%;
@@ -524,7 +521,8 @@ html, body {
 
 
 /* ============================================================
-   GRID
+   GRID (NO z-index — must NOT create a stacking context
+   so news/task cards can escape to body level when dimmed)
    ============================================================ */
 
 .grid {
@@ -534,12 +532,11 @@ html, body {
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 14px;
     position: relative;
-    z-index: 2;
 }
 
 
 /* ============================================================
-   CARD (frosted glass — spotlight glows through)
+   CARD (frosted glass)
    ============================================================ */
 
 .card {
@@ -618,12 +615,18 @@ html, body {
     transition: all 0.6s ease;
 }
 
+/* When dimmed, the news + tasks cards escape to body level so
+   they can sit ABOVE #dimOverlay (z-index 99997). */
 body.dimmed .card.news-card,
 body.dimmed .card.task-card {
     z-index: 99998;
     background: rgba(18, 23, 32, 0.98);
-    box-shadow: 0 0 80px rgba(120, 165, 255, 0.2), 0 12px 48px rgba(0, 0, 0, 0.6);
+    box-shadow:
+        0 0 80px rgba(120, 165, 255, 0.2),
+        0 12px 48px rgba(0, 0, 0, 0.6);
     border-color: rgba(120, 165, 255, 0.15);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 
