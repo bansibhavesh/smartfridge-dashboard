@@ -1781,85 +1781,191 @@ def weather_alert():
         return {"alert": None, "error": str(e)}
 
 # ============================================================
-# WEEK-AHEAD WEATHER
+# WEEK-AHEAD WEATHER (with fallback + caching)
 # ============================================================
 
 _week_weather_cache = None
 _week_weather_cache_time = None
 _week_weather_cache_duration = 1800  # 30 min
+_week_weather_fallback_cache = None
+_week_weather_fallback_cache_time = None
+_week_weather_fallback_duration = 3600  # 1 hour (not used directly, kept for reference)
+
+
+def _build_week_from_openmeteo():
+    """Primary source: Open-Meteo (free, no key)."""
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        f"?latitude={WEATHER_LAT}"
+        f"&longitude={WEATHER_LON}"
+        "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+        "&timezone=auto"
+        "&forecast_days=7"
+    )
+    response = requests.get(url, timeout=10)
+
+    if response.status_code == 429:
+        raise Exception("Open-Meteo rate limit (429) — shared Render IP")
+    if not response.ok:
+        raise Exception(f"Open-Meteo HTTP {response.status_code}: {response.text[:150]}")
+
+    data = response.json()
+    daily = data.get("daily", {})
+    dates = daily.get("time", [])
+    codes = daily.get("weather_code", [])
+    highs = daily.get("temperature_2m_max", [])
+    lows = daily.get("temperature_2m_min", [])
+    rain = daily.get("precipitation_probability_max", [])
+
+    days = []
+    for i in range(min(len(dates), 7)):
+        try:
+            day_date = datetime.strptime(dates[i], "%Y-%m-%d")
+            day_label = day_date.strftime("%a")
+        except Exception:
+            day_label = "?"
+
+        code = codes[i] if i < len(codes) else 800
+        high = round(highs[i]) if i < len(highs) and highs[i] is not None else 0
+        low = round(lows[i]) if i < len(lows) and lows[i] is not None else 0
+        rain_p = round(rain[i]) if i < len(rain) and rain[i] is not None else 0
+
+        days.append({
+            "date": dates[i],
+            "day": day_label,
+            "code": code,
+            "icon": weather_icon_owm(code, True),
+            "high": high,
+            "low": low,
+            "rain": rain_p,
+        })
+
+    if not days:
+        raise Exception("Open-Meteo returned no days")
+
+    return days
+
+
+def _build_week_from_openweathermap():
+    """Fallback source: OpenWeatherMap 5-day / 3-hour forecast aggregated into daily buckets."""
+    if not OPENWEATHER_API_KEY:
+        raise Exception("No OPENWEATHER_API_KEY for fallback")
+
+    r = requests.get(
+        "https://api.openweathermap.org/data/2.5/forecast",
+        params={
+            "lat": WEATHER_LAT,
+            "lon": WEATHER_LON,
+            "appid": OPENWEATHER_API_KEY,
+            "units": "metric",
+        },
+        timeout=10,
+    )
+    if not r.ok:
+        raise Exception(f"OWM HTTP {r.status_code}")
+
+    data = r.json()
+    buckets = {}  # date_str -> { highs, lows, codes, pops }
+
+    for item in data.get("list", []):
+        try:
+            dt = datetime.fromtimestamp(item["dt"])
+        except Exception:
+            continue
+        key = dt.strftime("%Y-%m-%d")
+        bucket = buckets.setdefault(key, {"highs": [], "lows": [], "codes": [], "pops": []})
+        main = item.get("main", {})
+        if "temp_max" in main: bucket["highs"].append(main["temp_max"])
+        if "temp_min" in main: bucket["lows"].append(main["temp_min"])
+        weather = item.get("weather", [{}])[0]
+        if weather.get("id"):
+            bucket["codes"].append(weather["id"])
+        bucket["pops"].append(item.get("pop", 0) * 100)
+
+    days = []
+    for date_key in sorted(buckets.keys())[:7]:
+        b = buckets[date_key]
+        dt = datetime.strptime(date_key, "%Y-%m-%d")
+        # most common code
+        code = max(set(b["codes"]), key=b["codes"].count) if b["codes"] else 800
+        days.append({
+            "date": date_key,
+            "day": dt.strftime("%a"),
+            "code": code,
+            "icon": weather_icon_owm(code, True),
+            "high": round(max(b["highs"])) if b["highs"] else 0,
+            "low": round(min(b["lows"])) if b["lows"] else 0,
+            "rain": round(max(b["pops"])) if b["pops"] else 0,
+        })
+
+    if not days:
+        raise Exception("OWM fallback returned no days")
+
+    return days
+
 
 @app.get("/api/weather/week")
 def get_week_weather():
     global _week_weather_cache, _week_weather_cache_time
+    global _week_weather_fallback_cache, _week_weather_fallback_cache_time
 
+    now_utc = datetime.now(timezone.utc)
+
+    # 1. Fresh primary cache?
+    if _week_weather_cache and _week_weather_cache_time:
+        if (now_utc - _week_weather_cache_time).total_seconds() < _week_weather_cache_duration:
+            return _week_weather_cache
+
+    # 2. Try primary (Open-Meteo)
     try:
-        if _week_weather_cache and _week_weather_cache_time:
-            elapsed = (datetime.now(timezone.utc) - _week_weather_cache_time).total_seconds()
-            if elapsed < _week_weather_cache_duration:
-                return _week_weather_cache
-
-        url = (
-            "https://api.open-meteo.com/v1/forecast"
-            f"?latitude={WEATHER_LAT}"
-            f"&longitude={WEATHER_LON}"
-            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
-            "&timezone=auto"
-            "&forecast_days=7"
-        )
-        response = requests.get(url, timeout=10)
-        if not response.ok:
-            raise Exception(f"Open-Meteo returned {response.status_code}")
-
-        data = response.json()
-        daily = data.get("daily", {})
-
-        dates = daily.get("time", [])
-        codes = daily.get("weather_code", [])
-        highs = daily.get("temperature_2m_max", [])
-        lows = daily.get("temperature_2m_min", [])
-        rain = daily.get("precipitation_probability_max", [])
-
-        days = []
-        for i in range(min(len(dates), 7)):
-            try:
-                day_date = datetime.strptime(dates[i], "%Y-%m-%d")
-                day_label = day_date.strftime("%a")
-            except Exception:
-                day_label = "?"
-
-            code = codes[i] if i < len(codes) else 800
-            high = round(highs[i]) if i < len(highs) and highs[i] is not None else 0
-            low = round(lows[i]) if i < len(lows) and lows[i] is not None else 0
-            rain_p = round(rain[i]) if i < len(rain) and rain[i] is not None else 0
-
-            days.append({
-                "date": dates[i],
-                "day": day_label,
-                "code": code,
-                "icon": weather_icon_owm(code, True),
-                "high": high,
-                "low": low,
-                "rain": rain_p,
-            })
-
+        days = _build_week_from_openmeteo()
         result = {
             "success": True,
             "days": days,
-            "updated": datetime.now(timezone.utc).isoformat(),
-            "source": "Open-Meteo"
+            "updated": now_utc.isoformat(),
+            "source": "Open-Meteo",
         }
-
         _week_weather_cache = result
-        _week_weather_cache_time = datetime.now(timezone.utc)
+        _week_weather_cache_time = now_utc
+        _week_weather_fallback_cache = result
+        _week_weather_fallback_cache_time = now_utc
+        log_system("Week forecast OK (Open-Meteo)", {"days": len(days)})
         return result
+    except Exception as primary_err:
+        log_warning(f"Week forecast primary failed: {primary_err}")
 
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "days": [],
-            "updated": datetime.now(timezone.utc).isoformat()
+    # 3. Try fallback (OpenWeatherMap)
+    try:
+        days = _build_week_from_openweathermap()
+        result = {
+            "success": True,
+            "days": days,
+            "updated": now_utc.isoformat(),
+            "source": "OpenWeatherMap (Fallback)",
         }
+        _week_weather_cache = result
+        _week_weather_cache_time = now_utc
+        _week_weather_fallback_cache = result
+        _week_weather_fallback_cache_time = now_utc
+        log_success("Week forecast OK (OWM fallback)", {"days": len(days)})
+        return result
+    except Exception as fb_err:
+        log_error(f"Week forecast fallback failed: {fb_err}")
+
+    # 4. Serve stale cache if we have one (better than nothing)
+    if _week_weather_fallback_cache:
+        stale = dict(_week_weather_fallback_cache)
+        stale["stale"] = True
+        log_warning("Serving STALE week forecast")
+        return stale
+
+    # 5. Total failure
+    return {
+        "success": False,
+        "error": "All week-forecast providers failed",
+        "days": [],
+        "updated": now_utc.isoformat(),
+    }
 
 # ============================================================
 # GROCERY
