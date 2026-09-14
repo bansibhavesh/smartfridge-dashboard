@@ -266,7 +266,7 @@ Browsers require a user gesture before entering fullscreen. The dashboard:
 
 ## 🐛 Known Issues
 
-- **Audio caching**: after replacing an MP3, browsers may serve the stale cached version for up to 24 hours. Fix: hard-reload once (`Ctrl+Shift+R`) or bump the version query param in `playDing()`.
+- **Audio caching**: handled automatically — the `/api/audio/` endpoint uses `no-cache` + ETag, so replaced MP3s are picked up on the next request without any manual version bump or cache clear.
 - **Google OAuth**: the first run requires visiting the server from a browser to complete the OAuth flow (only needed once locally before deploying).
 - **Render cold starts**: free-tier services sleep after 15 min of inactivity. First request after sleep takes ~30s.
 
@@ -295,13 +295,14 @@ Browsers require a user gesture before entering fullscreen. The dashboard:
 
 ## 🔧 Development Tips
 
-### Bumping audio cache
 
-When you replace a file in `static/`, bump the version query param in `index.html`:
+Replace it with this shorter tip:
 
-```javascript
-new Audio('/static/ding.mp3?v=2')   // change v=2 → v=3
-```
+```markdown
+### Replacing audio files
+
+Just drop the new MP3 into `static/` — the server's ETag handling means browsers
+will fetch the fresh file automatically. No version bumps needed.
 
 ### Testing the deploy-ID flow
 

@@ -197,7 +197,7 @@ def kv_set(key: str, value) -> bool:
 # ============================================================
 
 LOG_FILE = BASE_DIR / "system_log.json"
-MAX_LOG_ENTRIES = 20
+MAX_LOG_ENTRIES = 100
 
 def load_logs():
     try:
