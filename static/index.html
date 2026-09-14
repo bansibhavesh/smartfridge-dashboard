@@ -142,6 +142,11 @@ html, body {
     from { opacity: 0; transform: translateX(-10px); }
     to { opacity: 1; transform: translateX(0); }
 }
+@keyframes spotlightDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(3%, 2%) scale(1.05); }
+    66%      { transform: translate(-2%, 3%) scale(0.97); }
+}
 
 
 /* ============================================================
@@ -157,14 +162,10 @@ html, body {
     gap: 14px;
     position: relative;
     overflow: hidden;
-
-    background:
-        radial-gradient(1200px 600px at 15% -10%, rgba(120, 165, 255, 0.10), transparent 60%),
-        radial-gradient(900px 500px at 100% 0%, rgba(167, 139, 250, 0.07), transparent 55%),
-        radial-gradient(700px 700px at 50% 120%, rgba(74, 222, 128, 0.05), transparent 60%),
-        var(--bg-0);
+    background: var(--bg-0);
 }
 
+/* Fine grain texture — subtle, sits above the base background */
 .dashboard::before {
     content: '';
     position: absolute;
@@ -175,8 +176,90 @@ html, body {
     background-size: 32px 32px, 48px 48px;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.6;
+    opacity: 0.45;
 }
+
+
+/* ============================================================
+   AMBIENT SPOTLIGHT (static, weather-aware)
+   ============================================================ */
+
+.spotlight {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+    --spot-rgb: 120, 165, 255;
+}
+
+.spotlight-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0;
+    transition:
+        background 1.4s var(--ease-smooth),
+        opacity 1.4s var(--ease-smooth);
+    animation: spotlightDrift 22s ease-in-out infinite;
+    will-change: transform, opacity;
+}
+
+/* Top-left hero glow */
+.spotlight-blob-tl {
+    top: -30%;
+    left: -20%;
+    width: 85vw;
+    height: 85vw;
+    max-width: 1100px;
+    max-height: 1100px;
+    background: radial-gradient(circle,
+        rgba(var(--spot-rgb), 0.55) 0%,
+        rgba(var(--spot-rgb), 0.28) 25%,
+        rgba(var(--spot-rgb), 0.10) 50%,
+        transparent 72%);
+    animation-delay: 0s;
+}
+
+/* Top-right accent */
+.spotlight-blob-tr {
+    top: -25%;
+    right: -25%;
+    width: 70vw;
+    height: 70vw;
+    max-width: 900px;
+    max-height: 900px;
+    background: radial-gradient(circle,
+        rgba(var(--spot-rgb), 0.38) 0%,
+        rgba(var(--spot-rgb), 0.16) 30%,
+        transparent 68%);
+    animation-delay: -7s;
+}
+
+/* Bottom-center subtle base */
+.spotlight-blob-bc {
+    bottom: -40%;
+    left: 20%;
+    width: 75vw;
+    height: 60vw;
+    max-width: 950px;
+    max-height: 800px;
+    background: radial-gradient(ellipse,
+        rgba(var(--spot-rgb), 0.24) 0%,
+        rgba(var(--spot-rgb), 0.08) 35%,
+        transparent 70%);
+    animation-delay: -14s;
+}
+
+.spotlight.ready .spotlight-blob { opacity: 1; }
+
+/* Weather-aware color themes */
+.spotlight.weather-clear { --spot-rgb: 120, 165, 255; }
+.spotlight.weather-rain  { --spot-rgb: 96, 165, 250;  }
+.spotlight.weather-storm { --spot-rgb: 167, 139, 250; }
+.spotlight.weather-heat  { --spot-rgb: 251, 146, 60;  }
+.spotlight.weather-cold  { --spot-rgb: 147, 197, 253; }
+.spotlight.weather-snow  { --spot-rgb: 226, 232, 240; }
 
 
 /* ============================================================
@@ -191,8 +274,8 @@ html, body {
     position: relative;
     z-index: 100;
     background: linear-gradient(180deg,
-        rgba(23, 31, 44, 0.65),
-        rgba(17, 23, 34, 0.65));
+        rgba(23, 31, 44, 0.75),
+        rgba(17, 23, 34, 0.75));
     backdrop-filter: blur(24px) saturate(140%);
     -webkit-backdrop-filter: blur(24px) saturate(140%);
     border-radius: var(--r-lg);
@@ -451,11 +534,12 @@ html, body {
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 14px;
     position: relative;
+    z-index: 2;
 }
 
 
 /* ============================================================
-   CARD
+   CARD (frosted glass — spotlight glows through)
    ============================================================ */
 
 .card {
@@ -465,10 +549,10 @@ html, body {
     position: relative;
     background:
         linear-gradient(180deg,
-            rgba(255, 255, 255, 0.028) 0%,
-            rgba(255, 255, 255, 0.008) 40%,
-            rgba(0, 0, 0, 0) 100%),
-        var(--bg-2);
+            rgba(23, 31, 44, 0.72) 0%,
+            rgba(17, 23, 34, 0.82) 100%);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
     border: 1px solid var(--border-1);
     border-radius: var(--r-xl);
     padding: 16px;
@@ -480,7 +564,7 @@ html, body {
         box-shadow 0.5s var(--ease-smooth),
         background 0.35s var(--ease-smooth);
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
         0 12px 40px rgba(0, 0, 0, 0.35);
     animation: fadeInUp 0.7s var(--ease-spring) both;
 }
@@ -506,7 +590,7 @@ html, body {
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.06) inset,
         0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(120, 165, 255, 0.04);
+        0 0 0 1px rgba(120, 165, 255, 0.06);
 }
 
 .card h2 {
@@ -759,7 +843,7 @@ body.dimmed .card.task-card {
 
 
 /* ============================================================
-   WEATHER INFO STRIP
+   WEATHER INFO STRIP (facts only)
    ============================================================ */
 
 .weather-info-strip {
@@ -809,41 +893,6 @@ body.dimmed .card.task-card {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-.weather-info-strip.alert-rain {
-    background: rgba(30, 58, 100, 0.5);
-    border-color: rgba(96, 165, 250, 0.25);
-    color: rgba(191, 219, 254, 1);
-}
-.weather-info-strip.alert-rain::before { background: rgba(96, 165, 250, 0.9); }
-
-.weather-info-strip.alert-storm {
-    background: rgba(60, 40, 100, 0.5);
-    border-color: rgba(139, 92, 246, 0.25);
-    color: rgba(221, 214, 254, 1);
-}
-.weather-info-strip.alert-storm::before { background: rgba(167, 139, 250, 0.9); }
-
-.weather-info-strip.alert-heat {
-    background: rgba(100, 50, 20, 0.5);
-    border-color: rgba(251, 146, 60, 0.25);
-    color: rgba(254, 215, 170, 1);
-}
-.weather-info-strip.alert-heat::before { background: rgba(251, 146, 60, 0.9); }
-
-.weather-info-strip.alert-cold {
-    background: rgba(30, 60, 100, 0.5);
-    border-color: rgba(147, 197, 253, 0.25);
-    color: rgba(219, 234, 254, 1);
-}
-.weather-info-strip.alert-cold::before { background: rgba(147, 197, 253, 0.9); }
-
-.weather-info-strip.alert-snow {
-    background: rgba(60, 70, 85, 0.5);
-    border-color: rgba(226, 232, 240, 0.25);
-    color: rgba(241, 245, 249, 1);
-}
-.weather-info-strip.alert-snow::before { background: rgba(226, 232, 240, 0.9); }
 
 
 /* ============================================================
@@ -1629,7 +1678,7 @@ body.dimmed .card.task-card {
         linear-gradient(180deg,
             rgba(255, 255, 255, 0.02),
             transparent 30%),
-        #060a11;
+        rgba(6, 10, 17, 0.85);
     border-color: rgba(74, 222, 128, 0.08);
 }
 .log-card h2 {
@@ -2107,6 +2156,12 @@ body.dimmed .card.task-card {
 
 <div class="dashboard">
 
+<div class="spotlight" id="spotlight">
+    <div class="spotlight-blob spotlight-blob-tl"></div>
+    <div class="spotlight-blob spotlight-blob-tr"></div>
+    <div class="spotlight-blob spotlight-blob-bc"></div>
+</div>
+
 <header class="top">
     <div>
         <div class="date" id="date"></div>
@@ -2427,6 +2482,42 @@ function pushClientLog(message, type='client') {
 }
 
 window.pushClientLog = pushClientLog;
+
+
+/* ============================================================
+   AMBIENT SPOTLIGHT — static, weather-aware
+   ============================================================ */
+
+let spotlightEl = null;
+
+function initSpotlight() {
+    spotlightEl = document.getElementById('spotlight');
+    if (!spotlightEl) return;
+    setTimeout(() => spotlightEl.classList.add('ready'), 100);
+    setSpotlightWeather(null);
+}
+
+function setSpotlightWeather(alert) {
+    if (!spotlightEl) return;
+    spotlightEl.classList.remove(
+        'weather-rain', 'weather-storm', 'weather-heat',
+        'weather-cold', 'weather-snow', 'weather-clear'
+    );
+
+    if (!alert) {
+        spotlightEl.classList.add('weather-clear');
+        return;
+    }
+
+    if (alert.icon === '☔' || alert.icon === '🌧️') spotlightEl.classList.add('weather-rain');
+    else if (alert.icon === '⛈️') spotlightEl.classList.add('weather-storm');
+    else if (alert.icon === '❄️') spotlightEl.classList.add('weather-snow');
+    else if (alert.icon === '🥵') spotlightEl.classList.add('weather-heat');
+    else if (alert.icon === '🧥') spotlightEl.classList.add('weather-cold');
+    else spotlightEl.classList.add('weather-clear');
+}
+
+window.setSpotlightWeather = setSpotlightWeather;
 
 
 /* ============================================================
@@ -3653,7 +3744,7 @@ function updateTempBar(temp) {
 
 
 /* ============================================================
-   WEATHER INFO STRIP — alerts when present, facts otherwise
+   WEATHER INFO STRIP — facts only + spotlight color driver
    ============================================================ */
 
 const weatherFacts = {
@@ -3704,26 +3795,15 @@ function updateWeatherInfoStrip(alerts, weatherCode) {
     const iconEl = strip.querySelector('.info-icon');
     const textEl = strip.querySelector('.info-text');
 
-    strip.className = 'weather-info-strip';
+    // Drive the ambient spotlight color based on the first alert (if any)
+    setSpotlightWeather(alerts && alerts.length ? alerts[0] : null);
 
-    if (alerts && alerts.length) {
-        const alert = alerts[0];
-        iconEl.textContent = alert.icon;
-        textEl.textContent = alert.text;
-
-        if (alert.icon === '☔' || alert.icon === '🌧️') strip.classList.add('alert-rain');
-        else if (alert.icon === '⛈️') strip.classList.add('alert-storm');
-        else if (alert.icon === '❄️') strip.classList.add('alert-snow');
-        else if (alert.icon === '🥵') strip.classList.add('alert-heat');
-        else if (alert.icon === '🧥') strip.classList.add('alert-cold');
-
-        return;
-    }
-
+    // Info strip = facts only
     const type = pickWeatherType(weatherCode);
     const facts = weatherFacts[type] || weatherFacts.sunny;
     const fact = facts[Math.floor(Math.random() * facts.length)];
 
+    strip.className = 'weather-info-strip';
     iconEl.textContent = '💡';
     textEl.textContent = fact;
 }
@@ -4175,6 +4255,8 @@ document.getElementById('scheduled-modal').addEventListener('click', function(e)
 
 createModeDropdown();
 loadMode();
+
+initSpotlight();
 
 loadFamily();
 loadTasks();
