@@ -325,10 +325,11 @@ raise Exception("forced test failure")
 ## 📜 License
 
 Personal project — not licensed for redistribution.
-contact at bansibhavesh@hotmail.com for permissons to use
+
+contact at bansibhavesh@hotmail.com for permissons to commercially use.
 
 ```markdown
-Built using DEEPSEEK AI, expect bugs and issues
+Built using DEEPSEEK AI, expect bugs and issues.
 ```
 
 
