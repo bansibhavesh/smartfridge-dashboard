@@ -295,14 +295,12 @@ Browsers require a user gesture before entering fullscreen. The dashboard:
 
 ## 🔧 Development Tips
 
-
-Replace it with this shorter tip:
-
 ```markdown
 ### Replacing audio files
 
 Just drop the new MP3 into `static/` — the server's ETag handling means browsers
 will fetch the fresh file automatically. No version bumps needed.
+```
 
 ### Testing the deploy-ID flow
 
@@ -327,7 +325,13 @@ raise Exception("forced test failure")
 ## 📜 License
 
 Personal project — not licensed for redistribution.
+contact at bansibhavesh@hotmail.com for permissons to use
+
+```markdown
+Built using DEEPSEEK AI, expect bugs and issues
+```
+
 
 ---
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-18*
